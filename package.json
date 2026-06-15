@@ -1,0 +1,17 @@
+{
+  "name": "lions-club-321c1-directory",
+  "version": "1.0.0",
+  "description": "Lions Club District 321 C1 - AI-powered Member Directory",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "dependencies": {
+    "@clerk/express": "^2.1.26",
+    "@supabase/supabase-js": "^2.108.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lions Club District 321 C1 - Member Directory</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-top">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 64 64" width="52" height="52">
+                            <circle cx="32" cy="32" r="30" fill="#0033A0" stroke="#FFD100" stroke-width="3"/>
+                            <circle cx="32" cy="32" r="22" fill="none" stroke="#FFD100" stroke-width="2.5"/>
+                            <text x="32" y="29" text-anchor="middle" fill="#FFD100" font-size="22" font-weight="bold" font-family="serif">L</text>
+                            <circle cx="32" cy="41" r="5" fill="#FFD100"/>
+                            <circle cx="22" cy="41" r="5" fill="#FFD100"/>
+                            <circle cx="42" cy="41" r="5" fill="#FFD100"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Lions Club</h1>
+                        <p>District 321 C1</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div id="clerk-auth-container"></div>
+                    <div class="header-badge">
+                        <span class="motto">"We Serve"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="header-banner">
+            <div class="container">
+                <h2>Member Directory</h2>
+                <p>Connect with fellow Lions across District 321 C1</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="ai-search">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                    <path d="M8 12a4 4 0 0 1 8 0"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                AI Search
+            </button>
+            <button class="tab-btn" data-tab="directory">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Directory
+            </button>
+        </nav>
+
+        <!-- AI Search Tab -->
+        <section id="tab-ai-search" class="tab-panel active">
+            <div class="ai-search-container">
+                <div class="ai-search-card">
+                    <div class="ai-input-area">
+                        <textarea id="aiQuery" placeholder="Describe who you're looking for...&#10;&#10;e.g. &quot;I need a doctor in Patna to speak at our health awareness camp next month&quot; or &quot;Looking for Chartered Accountants near Muzaffarpur who can help audit our club accounts&quot;" rows="3"></textarea>
+                        <div class="ai-search-actions">
+                            <span class="ai-hint">Ask in natural language — the AI will find the best matches</span>
+                            <button id="btnAiSearch" class="btn-ai-search">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
+                                </svg>
+                                Search with AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="aiResults" class="ai-results hidden">
+                    <div id="aiResponse" class="ai-response"></div>
+                    <div id="aiMembers" class="ai-members"></div>
+                </div>
+                <div id="aiLoading" class="ai-loading hidden">
+                    <div class="ai-loading-spinner"></div>
+                    <p>Searching across the member directory...</p>
+                </div>
+                <div id="aiError" class="ai-error hidden"></div>
+            </div>
+        </section>
+
+        <!-- Directory Tab -->
+        <section id="tab-directory" class="tab-panel">
+            <div class="search-section">
+                <div class="search-card">
+                    <div class="search-row">
+                        <div class="search-input-group">
+                            <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            <input type="text" id="searchText" placeholder="Search by name, club, or designation..." autocomplete="off">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterLocation">
+                                <option value="">All Locations</option>
+                            </select>
+                            <select id="filterProfession">
+                                <option value="">All Professions</option>
+                            </select>
+                            <button id="btnClear" class="btn-clear" title="Clear filters">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                </svg>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="stats-bar">
+                        <span id="resultCount">Showing 0 members</span>
+                    </div>
+                </div>
+            </div>
+            <div class="results-section">
+                <div id="membersGrid" class="members-grid"></div>
+                <div id="noResults" class="no-results hidden">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                        <path d="M8 11h6"/>
+                    </svg>
+                    <h3>No members found</h3>
+                    <p>Try adjusting your search terms or filters</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Lions Club District 321 C1</h3>
+                <p>Serving communities across Bihar since 1957</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="dg-office.html">Contact DG Office</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Lions Club International District 321 C1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="data/members.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        // Clerk authentication
+        (function () {
+            var clerkPublishableKey = null;
+
+            fetch('/api/auth/config')
+                .then(function (r) { return r.json(); })
+                .then(function (config) {
+                    if (!config.clerkConfigured || !config.clerkPublishableKey) return;
+                    clerkPublishableKey = config.clerkPublishableKey;
+                    loadClerkSDK();
+                })
+                .catch(function () {});
+
+            function loadClerkSDK() {
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+                script.async = true;
+                script.crossOrigin = 'anonymous';
+                script.onload = initClerk;
+                script.onerror = function () { console.warn('Clerk SDK failed to load'); };
+                document.body.appendChild(script);
+            }
+
+            function initClerk() {
+                if (!window.Clerk) return;
+                window.Clerk.load({ publishableKey: clerkPublishableKey })
+                    .then(function () {
+                        var container = document.getElementById('clerk-auth-container');
+                        if (!container) return;
+
+                        if (window.Clerk.user) {
+                            renderSignedIn(window.Clerk.user);
+                        }
+
+                        window.Clerk.addListener(function (state) {
+                            if (state.user) {
+                                renderSignedIn(state.user);
+                            } else {
+                                renderSignedOut();
+                            }
+                        });
+
+                        renderAuthUI();
+                    })
+                    .catch(function (err) { console.warn('Clerk init failed:', err); });
+            }
+
+            function renderAuthUI() {
+                var container = document.getElementById('clerk-auth-container');
+                if (!container) return;
+                var user = window.Clerk && window.Clerk.user;
+                if (user) {
+                    renderSignedIn(user);
+                } else {
+                    renderSignedOut();
+                }
+            }
+
+            function renderSignedIn(user) {
+                var container = document.getElementById('clerk-auth-container');
+                if (!container) return;
+                container.innerHTML =
+                    '<div class="clerk-user-menu">' +
+                        '<span class="clerk-user-name">' + escapeHtml(user.fullName || user.primaryEmailAddress) + '</span>' +
+                        '<button class="clerk-sign-out-btn" id="clerkSignOut">Sign Out</button>' +
+                    '</div>';
+                document.getElementById('clerkSignOut').addEventListener('click', function () {
+                    window.Clerk.signOut();
+                });
+            }
+
+            function renderSignedOut() {
+                var container = document.getElementById('clerk-auth-container');
+                if (!container) return;
+                container.innerHTML =
+                    '<button class="clerk-sign-in-btn" id="clerkSignIn">Sign In</button>';
+                document.getElementById('clerkSignIn').addEventListener('click', function () {
+                    window.Clerk.openSignIn();
+                });
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+        })();
+    </script>
+</body>
+</html>
