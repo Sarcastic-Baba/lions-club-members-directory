@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Lions Club District 321 C1</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script>document.documentElement.classList.add('auth-guard-pending');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="app-immersive-page">
+    <header class="header">
+        <div class="header-top">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                    </div>
+                    <div class="logo-text">
+                        <h1>Lions Club</h1>
+                        <p>District 321 C1</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div id="auth-container"></div>
+                    <div class="header-badge">
+                        <span class="motto">Compassion in Action</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container app-page-shell">
+        <nav class="feed-nav">
+            <a href="index.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Home
+            </a>
+            <a href="directory.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Directory
+            </a>
+            <a href="feed.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="3"/><path d="M2 7h20"/><path d="M8 11h8"/><path d="M8 15h6"/>
+                </svg>
+                Feed
+            </a>
+            <a href="gallery.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                Gallery
+            </a>
+            <a href="profile.html" class="feed-nav-link active">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                My Profile
+            </a>
+        </nav>
+
+        <section class="immersive-page-header profile-page-header">
+            <span class="section-eyebrow">Member Profile</span>
+            <h2>My Profile</h2>
+            <p>Manage your Lions Club member profile.</p>
+        </section>
+
+        <div id="profileLoading" class="profile-loading">
+            <div class="ai-loading-spinner"></div>
+            <p>Loading your profile...</p>
+        </div>
+
+        <div id="profileAuthRequired" class="profile-auth-required hidden">
+            <div class="profile-message-card">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <h3>Sign in to access your profile</h3>
+                <p>Create or edit your Lions Club member profile after signing in.</p>
+                <button class="supabase-auth-btn supabase-auth-btn-signin" id="profileSignInBtn">Sign In</button>
+            </div>
+        </div>
+
+        <div id="profileFormContainer" class="profile-container hidden">
+            <div id="profileAlert" class="profile-alert hidden"></div>
+
+            <form id="profileForm" class="profile-form">
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Personal Information</h3>
+
+                    <div class="profile-photo-area">
+                        <div class="profile-photo-preview" id="profilePhotoPreview">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="profile-photo-actions">
+                            <span class="profile-photo-label">Profile Photo</span>
+                            <button type="button" class="btn-photo-upload" id="btnPhotoUpload">Upload Photo</button>
+                            <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pfName">Full Name *</label>
+                            <input type="text" id="pfName" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pfEmail">Email Address</label>
+                            <input type="email" id="pfEmail" placeholder="your@email.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pfPhone">Phone Number</label>
+                            <input type="tel" id="pfPhone" placeholder="+91-XXXXXXXXXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="pfYearJoining">Year of Joining</label>
+                            <input type="number" id="pfYearJoining" placeholder="e.g. 2020" min="1957" max="2030">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pfAddress">Address</label>
+                        <textarea id="pfAddress" rows="2" placeholder="Your full address"></textarea>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Lions Club Details</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pfClub">Club Name *</label>
+                            <input type="text" id="pfClub" placeholder="e.g. Lions Club Patna Central" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pfDesignation">Designation *</label>
+                            <select id="pfDesignation" required>
+                                <option value="">Select designation</option>
+                                <option value="President">President</option>
+                                <option value="Vice President">Vice President</option>
+                                <option value="Secretary">Secretary</option>
+                                <option value="Joint Secretary">Joint Secretary</option>
+                                <option value="Treasurer">Treasurer</option>
+                                <option value="Member">Member</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pfLocation">Location *</label>
+                            <input type="text" id="pfLocation" placeholder="e.g. Patna" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Professional Information</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pfProfession">Profession</label>
+                            <input type="text" id="pfProfession" placeholder="e.g. Doctor, Engineer, Advocate">
+                        </div>
+                        <div class="form-group">
+                            <label for="pfSpecialty">Specialty</label>
+                            <input type="text" id="pfSpecialty" placeholder="e.g. Cardiologist, Civil Engineer, Criminal Law">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button type="submit" class="btn-save-profile" id="btnSaveProfile">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Profile
+                    </button>
+                    <a href="index.html" class="btn-back">&larr; Back to Directory</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Lions Club District 321 C1</h3>
+                <p>Serving communities across Bihar since 1957</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="dg-office.html">Contact DG Office</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Lions Club International District 321 C1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/auth-guard.js"></script>
+    <script>
+        (function () {
+            var authReady = false;
+            var profilePhotoUrl = null;
+
+            Auth.init().then(function () {
+                Auth.renderUI('auth-container');
+                authReady = true;
+
+                if (Auth.getUser()) {
+                    loadProfile();
+                } else {
+                    showAuthRequired();
+                }
+
+                Auth.onChange(function (isSignedIn) {
+                    if (isSignedIn) {
+                        loadProfile();
+                    } else {
+                        showAuthRequired();
+                    }
+                });
+            });
+
+            function getAuthHeaders(includeContentType) {
+                return Auth.getToken().then(function (token) {
+                    var headers = {};
+                    if (includeContentType !== false) headers['Content-Type'] = 'application/json';
+                    if (token) headers['Authorization'] = 'Bearer ' + token;
+                    return headers;
+                });
+            }
+
+            function showAuthRequired() {
+                document.getElementById('profileLoading').classList.add('hidden');
+                document.getElementById('profileAuthRequired').classList.remove('hidden');
+                document.getElementById('profileFormContainer').classList.add('hidden');
+                var btn = document.getElementById('profileSignInBtn');
+                if (btn) btn.addEventListener('click', function () {
+                    Auth.showAuthForm(document.getElementById('auth-container'));
+                });
+            }
+
+            function showLoading() {
+                document.getElementById('profileLoading').classList.remove('hidden');
+                document.getElementById('profileAuthRequired').classList.add('hidden');
+                document.getElementById('profileFormContainer').classList.add('hidden');
+            }
+
+            function showForm(profile) {
+                document.getElementById('profileLoading').classList.add('hidden');
+                document.getElementById('profileAuthRequired').classList.add('hidden');
+                document.getElementById('profileFormContainer').classList.remove('hidden');
+
+                if (profile) {
+                    document.getElementById('pfName').value = profile.name || '';
+                    document.getElementById('pfEmail').value = profile.email || '';
+                    document.getElementById('pfPhone').value = profile.phone || '';
+                    document.getElementById('pfAddress').value = profile.address || '';
+                    document.getElementById('pfProfession').value = profile.profession || '';
+                    document.getElementById('pfSpecialty').value = profile.specialty || '';
+                    document.getElementById('pfClub').value = profile.club || '';
+                    document.getElementById('pfDesignation').value = profile.designation || '';
+                    document.getElementById('pfLocation').value = profile.location || '';
+                    document.getElementById('pfYearJoining').value = profile.year_of_joining || '';
+                    profilePhotoUrl = profile.profile_photo_url || null;
+                    renderProfilePhoto(profilePhotoUrl);
+                }
+            }
+
+            function renderProfilePhoto(url) {
+                var preview = document.getElementById('profilePhotoPreview');
+                if (url) {
+                    preview.style.backgroundImage = 'url(' + url + ')';
+                    preview.style.backgroundSize = 'cover';
+                    preview.style.backgroundPosition = 'center';
+                    preview.innerHTML = '';
+                } else {
+                    preview.style.backgroundImage = '';
+                    preview.innerHTML = '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                }
+            }
+
+            // Photo upload
+            document.getElementById('btnPhotoUpload').addEventListener('click', function () {
+                document.getElementById('photoInput').click();
+            });
+
+            document.getElementById('photoInput').addEventListener('change', function () {
+                var file = this.files[0];
+                if (!file) return;
+
+                // Show preview immediately
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    renderProfilePhoto(e.target.result);
+                };
+                reader.readAsDataURL(file);
+
+                // Upload to server
+                var btn = document.getElementById('btnPhotoUpload');
+                btn.disabled = true;
+                btn.textContent = 'Uploading...';
+
+                getAuthHeaders(false).then(function (headers) {
+                    var formData = new FormData();
+                    formData.append('photo', file);
+                    return fetch('/api/upload-photo', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+                }).then(function (r) {
+                    if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Upload failed'); });
+                    return r.json();
+                }).then(function (data) {
+                    profilePhotoUrl = data.url;
+                    showAlert('Photo uploaded!', 'success');
+                }).catch(function (err) {
+                    showAlert('Photo upload failed: ' + err.message, 'error');
+                    renderProfilePhoto(null);
+                }).finally(function () {
+                    btn.disabled = false;
+                    btn.textContent = 'Upload Photo';
+                });
+            });
+
+            function loadProfile() {
+                showLoading();
+                getAuthHeaders().then(function (headers) {
+                    return fetch('/api/profile', { headers: headers });
+                })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Failed to load profile');
+                    return r.json();
+                })
+                .then(function (data) { showForm(data.profile); })
+                .catch(function (err) {
+                    console.error('Profile load error:', err);
+                    showAlert('Could not load profile. Please try again.', 'error');
+                    showForm(null);
+                });
+            }
+
+            document.getElementById('profileForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var btn = document.getElementById('btnSaveProfile');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                var payload = {
+                    name: document.getElementById('pfName').value.trim(),
+                    email: document.getElementById('pfEmail').value.trim(),
+                    phone: document.getElementById('pfPhone').value.trim(),
+                    address: document.getElementById('pfAddress').value.trim(),
+                    profession: document.getElementById('pfProfession').value.trim(),
+                    specialty: document.getElementById('pfSpecialty').value.trim(),
+                    club: document.getElementById('pfClub').value.trim(),
+                    designation: document.getElementById('pfDesignation').value,
+                    location: document.getElementById('pfLocation').value.trim(),
+                    year_of_joining: document.getElementById('pfYearJoining').value,
+                    profile_photo_url: profilePhotoUrl
+                };
+
+                getAuthHeaders().then(function (headers) {
+                    return fetch('/api/profile', {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify(payload)
+                    });
+                })
+                .then(function (r) {
+                    if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Save failed'); });
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.profile && (data.profile.status === 'pending' || data.profile.role === 'guest')) {
+                        showAlert('Profile saved. An admin must verify it before member-only pages unlock.', 'success');
+                    } else {
+                        showAlert('Profile saved successfully!', 'success');
+                    }
+                })
+                .catch(function (err) {
+                    showAlert('Error: ' + err.message, 'error');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Profile';
+                });
+            });
+
+            function showAlert(message, type) {
+                var alert = document.getElementById('profileAlert');
+                alert.textContent = message;
+                alert.className = 'profile-alert profile-alert-' + type;
+                alert.classList.remove('hidden');
+                setTimeout(function () { alert.classList.add('hidden'); }, 4000);
+            }
+        })();
+    </script>
+</body>
+</html>

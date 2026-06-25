@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Lions Club District 321 C1</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-top">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                    </div>
+                    <div class="logo-text">
+                        <h1>Lions Club</h1>
+                        <p>District 321 C1</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div id="auth-container"></div>
+                    <div class="header-badge">
+                        <span class="motto">Compassion in Action</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="login-page">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+            </div>
+            <div id="sign-in-container"></div>
+            <form id="tempAdminForm" class="temp-admin-login hidden">
+                <div class="temp-admin-divider">Temporary Admin</div>
+                <label>
+                    <span>Admin ID</span>
+                    <input type="text" id="tempAdminId" autocomplete="username" required>
+                </label>
+                <label>
+                    <span>Password</span>
+                    <input type="password" id="tempAdminPassword" autocomplete="current-password" required>
+                </label>
+                <button type="submit" class="supabase-auth-btn supabase-auth-btn-signin">Sign In as Admin</button>
+                <div id="tempAdminError" class="temp-admin-error hidden"></div>
+            </form>
+        </div>
+        <a href="index.html" class="login-back">&larr; Back to Home</a>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Lions Club District 321 C1</h3>
+                <p>Serving communities across Bihar since 1957</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="dg-office.html">Contact DG Office</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Lions Club International District 321 C1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script>
+        (function () {
+            function getSafeNext() {
+                var next = new URLSearchParams(window.location.search).get('next');
+                if (!next) return 'feed.html';
+
+                try {
+                    var url = new URL(next, window.location.origin);
+                    if (url.origin !== window.location.origin) return 'feed.html';
+                    return url.pathname.replace(/^\//, '') + url.search + url.hash;
+                } catch (e) {
+                    return 'feed.html';
+                }
+            }
+
+            function redirectAfterSignIn() {
+                window.location.href = getSafeNext();
+            }
+
+            Auth.init().then(function () {
+                Auth.renderUI('auth-container');
+                Auth.mountSignIn('sign-in-container');
+                var tempForm = document.getElementById('tempAdminForm');
+                var tempError = document.getElementById('tempAdminError');
+                if (tempForm && Auth.isTempAdminConfigured && Auth.isTempAdminConfigured()) {
+                    tempForm.classList.remove('hidden');
+                    tempForm.addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        if (tempError) tempError.classList.add('hidden');
+                        var adminId = document.getElementById('tempAdminId').value.trim();
+                        var password = document.getElementById('tempAdminPassword').value;
+                        Auth.signInTempAdmin(adminId, password)
+                            .then(redirectAfterSignIn)
+                            .catch(function (err) {
+                                if (tempError) {
+                                    tempError.textContent = err.message;
+                                    tempError.classList.remove('hidden');
+                                }
+                            });
+                    });
+                }
+                if (Auth.getUser()) redirectAfterSignIn();
+                Auth.onChange(function (isSignedIn) {
+                    if (isSignedIn) redirectAfterSignIn();
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

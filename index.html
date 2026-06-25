@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lions Club District 321 C1 - Member Directory</title>
+    <title>Lions Club District 321 C1 — Compassion in Action</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,14 +15,7 @@
             <div class="container header-container">
                 <div class="logo-area">
                     <div class="logo-icon">
-                        <svg viewBox="0 0 64 64" width="52" height="52">
-                            <circle cx="32" cy="32" r="30" fill="#0033A0" stroke="#FFD100" stroke-width="3"/>
-                            <circle cx="32" cy="32" r="22" fill="none" stroke="#FFD100" stroke-width="2.5"/>
-                            <text x="32" y="29" text-anchor="middle" fill="#FFD100" font-size="22" font-weight="bold" font-family="serif">L</text>
-                            <circle cx="32" cy="41" r="5" fill="#FFD100"/>
-                            <circle cx="22" cy="41" r="5" fill="#FFD100"/>
-                            <circle cx="42" cy="41" r="5" fill="#FFD100"/>
-                        </svg>
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
                     </div>
                     <div class="logo-text">
                         <h1>Lions Club</h1>
@@ -30,118 +23,160 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <div id="clerk-auth-container"></div>
+                    <div id="auth-container"></div>
                     <div class="header-badge">
-                        <span class="motto">"We Serve"</span>
+                        <span class="motto">Compassion in Action</span>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="header-banner">
-            <div class="container">
-                <h2>Member Directory</h2>
-                <p>Connect with fellow Lions across District 321 C1</p>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="ai-search">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
-                    <path d="M8 12a4 4 0 0 1 8 0"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                AI Search
-            </button>
-            <button class="tab-btn" data-tab="directory">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                Directory
-            </button>
-        </nav>
-
-        <!-- AI Search Tab -->
-        <section id="tab-ai-search" class="tab-panel active">
-            <div class="ai-search-container">
-                <div class="ai-search-card">
-                    <div class="ai-input-area">
-                        <textarea id="aiQuery" placeholder="Describe who you're looking for...&#10;&#10;e.g. &quot;I need a doctor in Patna to speak at our health awareness camp next month&quot; or &quot;Looking for Chartered Accountants near Muzaffarpur who can help audit our club accounts&quot;" rows="3"></textarea>
-                        <div class="ai-search-actions">
-                            <span class="ai-hint">Ask in natural language — the AI will find the best matches</span>
-                            <button id="btnAiSearch" class="btn-ai-search">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                                Search with AI
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div id="aiResults" class="ai-results hidden">
-                    <div id="aiResponse" class="ai-response"></div>
-                    <div id="aiMembers" class="ai-members"></div>
-                </div>
-                <div id="aiLoading" class="ai-loading hidden">
-                    <div class="ai-loading-spinner"></div>
-                    <p>Searching across the member directory...</p>
-                </div>
-                <div id="aiError" class="ai-error hidden"></div>
-            </div>
-        </section>
-
-        <!-- Directory Tab -->
-        <section id="tab-directory" class="tab-panel">
-            <div class="search-section">
-                <div class="search-card">
-                    <div class="search-row">
-                        <div class="search-input-group">
-                            <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="M21 21l-4.35-4.35"/>
+    <main class="landing-main">
+        <section class="landing-hero">
+            <div class="container landing-hero-grid">
+                <div class="landing-copy">
+                    <nav class="landing-routebar" aria-label="Primary navigation">
+                        <a href="index.html" class="active">Home</a>
+                        <a href="directory.html">Directory</a>
+                        <a href="feed.html">Feed</a>
+                        <a href="gallery.html">Gallery</a>
+                        <a href="profile.html">My Profile</a>
+                    </nav>
+                    <span class="landing-kicker">District 321 C1 | L.Y. 2026-27</span>
+                    <h1>Compassion in Action</h1>
+                    <p class="landing-lead">A district-wide service network for Lions across Bihar, built around people, projects, and the momentum behind every community initiative.</p>
+                    <div class="landing-actions">
+                        <a href="directory.html" class="btn-hero-primary">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                             </svg>
-                            <input type="text" id="searchText" placeholder="Search by name, club, or designation..." autocomplete="off">
-                        </div>
-                        <div class="filter-group">
-                            <select id="filterLocation">
-                                <option value="">All Locations</option>
-                            </select>
-                            <select id="filterProfession">
-                                <option value="">All Professions</option>
-                            </select>
-                            <button id="btnClear" class="btn-clear" title="Clear filters">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 6L6 18M6 6l12 12"/>
-                                </svg>
-                                Clear
-                            </button>
-                        </div>
+                            Explore Directory
+                        </a>
+                        <a href="feed.html" class="btn-hero-secondary">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="20" rx="3"/><path d="M2 7h20"/><path d="M8 11h8"/><path d="M8 15h6"/>
+                            </svg>
+                            View Feed
+                        </a>
                     </div>
-                    <div class="stats-bar">
-                        <span id="resultCount">Showing 0 members</span>
+                    <div class="landing-proof">
+                        <div>
+                            <strong id="statMembers" data-target="34">34+</strong>
+                            <span>Members</span>
+                        </div>
+                        <div>
+                            <strong id="statClubs" data-target="16">16+</strong>
+                            <span>Clubs</span>
+                        </div>
+                        <div>
+                            <strong id="statYears" data-target="69">69</strong>
+                            <span>Years</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="results-section">
-                <div id="membersGrid" class="members-grid"></div>
-                <div id="noResults" class="no-results hidden">
-                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                        <path d="M8 11h6"/>
-                    </svg>
-                    <h3>No members found</h3>
-                    <p>Try adjusting your search terms or filters</p>
+
+                <aside class="landing-right-panel" aria-label="District highlights">
+                    <div class="right-panel-card">
+                        <div class="right-panel-heading">Upcoming District Events</div>
+                        <ul class="right-panel-list">
+                            <li><span class="right-panel-dot"></span><span>Installation Ceremony</span></li>
+                            <li><span class="right-panel-dot"></span><span>Blood Donation Camp</span></li>
+                            <li><span class="right-panel-dot"></span><span>Cabinet Meeting</span></li>
+                        </ul>
+                    </div>
+                    <div class="right-panel-card">
+                        <div class="right-panel-heading">Active Clubs</div>
+                        <div class="right-panel-metric"><strong>16</strong><span>Serving across District 321 C1</span></div>
+                        <a href="directory.html" class="right-panel-link">Browse Directory</a>
+                    </div>
+                </aside>
+
+                <div class="landing-stage" aria-label="Lion Aditya Gupta DG badge and service highlights">
+                    <div class="stage-badge">
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                    </div>
+
+                </div>
+
+                <div class="landing-brief">
+                    <h2>Every club. One district movement.</h2>
+                    <p>Coordinate volunteers, discover member expertise, publish updates, and keep service stories visible across District 321 C1.</p>
+                    <div class="brief-pills">
+                        <span>Health Camps</span>
+                        <span>Relief Drives</span>
+                        <span>Youth Outreach</span>
+                        <span>Green Initiatives</span>
+                    </div>
                 </div>
             </div>
         </section>
+
+        <section class="activity-showcase">
+            <div class="container activity-layout">
+                <div class="activity-heading">
+                    <span class="section-eyebrow">Service In Motion</span>
+                    <h2>Stories from the field deserve the front page.</h2>
+                </div>
+                <div class="activity-wall">
+                    <article class="activity-tile tile-large">
+                        <div class="tile-visual tile-health"></div>
+                        <div>
+                            <span>Health</span>
+                            <h3>Medical camps and awareness drives</h3>
+                        </div>
+                    </article>
+                    <article class="activity-tile">
+                        <div class="tile-visual tile-relief"></div>
+                        <div>
+                            <span>Relief</span>
+                            <h3>Fast response for local needs</h3>
+                        </div>
+                    </article>
+                    <article class="activity-tile">
+                        <div class="tile-visual tile-youth"></div>
+                        <div>
+                            <span>Youth</span>
+                            <h3>Leadership moments worth sharing</h3>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="service-slide" id="slide-environment">
+            <div class="service-slide-bg" style="background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1920&q=80');"></div>
+            <div class="service-slide-overlay"></div>
+            <div class="container service-slide-content">
+                <span class="section-eyebrow">Service to Environment</span>
+                <h2>Greening communities, one sapling at a time</h2>
+                <p>Tree plantation drives, park restorations, and eco-awareness campaigns that breathe life back into urban and rural spaces across the district.</p>
+                <a href="feed.html" class="btn-hero-primary">Explore Initiatives</a>
+            </div>
+        </section>
+
+        <section class="service-slide service-slide--reverse" id="slide-society">
+            <div class="service-slide-bg" style="background-image: url('https://images.unsplash.com/photo-1631815588090-d4bfec1b9bc0?w=1920&q=80');"></div>
+            <div class="service-slide-overlay"></div>
+            <div class="container service-slide-content">
+                <span class="section-eyebrow">Service to Society</span>
+                <h2>Healthcare, relief, and human dignity</h2>
+                <p>Medical camps, blood donation drives, disaster relief, and hunger projects — bringing essential care to those who need it most.</p>
+                <a href="feed.html" class="btn-hero-primary">View Projects</a>
+            </div>
+        </section>
+
+        <section class="service-slide" id="slide-students">
+            <div class="service-slide-bg" style="background-image: url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1920&q=80');"></div>
+            <div class="service-slide-overlay"></div>
+            <div class="container service-slide-content">
+                <span class="section-eyebrow">Service to Students</span>
+                <h2>Empowering the next generation</h2>
+                <p>Scholarship programs, school supply drives, career mentorship, and Leo club partnerships that invest in the leaders of tomorrow.</p>
+                <a href="feed.html" class="btn-hero-primary">Get Involved</a>
+            </div>
+        </section>
+
     </main>
 
     <footer class="footer">
@@ -161,93 +196,122 @@
         </div>
     </footer>
 
-    <script src="data/members.js"></script>
-    <script src="js/script.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/right-panel.js"></script>
     <script>
-        // Clerk authentication
+        Auth.init().then(function () { Auth.renderUI('auth-container'); });
+
         (function () {
-            var clerkPublishableKey = null;
+            var membersEl = document.getElementById('statMembers');
+            var clubsEl = document.getElementById('statClubs');
+            var yearsEl = document.getElementById('statYears');
+            var animated = false;
+            var animationToken = 0;
 
-            fetch('/api/auth/config')
-                .then(function (r) { return r.json(); })
-                .then(function (config) {
-                    if (!config.clerkConfigured || !config.clerkPublishableKey) return;
-                    clerkPublishableKey = config.clerkPublishableKey;
-                    loadClerkSDK();
-                })
-                .catch(function () {});
-
-            function loadClerkSDK() {
-                var script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
-                script.async = true;
-                script.crossOrigin = 'anonymous';
-                script.onload = initClerk;
-                script.onerror = function () { console.warn('Clerk SDK failed to load'); };
-                document.body.appendChild(script);
+            function parseTarget(el) {
+                return parseInt(el.getAttribute('data-target'), 10) || parseInt(el.textContent, 10) || 0;
             }
 
-            function initClerk() {
-                if (!window.Clerk) return;
-                window.Clerk.load({ publishableKey: clerkPublishableKey })
-                    .then(function () {
-                        var container = document.getElementById('clerk-auth-container');
-                        if (!container) return;
+            function animateCount(el, target, suffix, token) {
+                var start = 0;
+                var duration = 1600;
+                var startTime = null;
+                suffix = suffix || '';
 
-                        if (window.Clerk.user) {
-                            renderSignedIn(window.Clerk.user);
-                        }
-
-                        window.Clerk.addListener(function (state) {
-                            if (state.user) {
-                                renderSignedIn(state.user);
-                            } else {
-                                renderSignedOut();
-                            }
-                        });
-
-                        renderAuthUI();
-                    })
-                    .catch(function (err) { console.warn('Clerk init failed:', err); });
+                function step(timestamp) {
+                    if (token !== animationToken) return;
+                    if (!startTime) startTime = timestamp;
+                    var progress = Math.min((timestamp - startTime) / duration, 1);
+                    var eased = 1 - Math.pow(1 - progress, 3);
+                    var current = Math.floor(start + (target - start) * eased);
+                    el.textContent = current + suffix;
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        el.textContent = target + suffix;
+                    }
+                }
+                requestAnimationFrame(step);
             }
 
-            function renderAuthUI() {
-                var container = document.getElementById('clerk-auth-container');
-                if (!container) return;
-                var user = window.Clerk && window.Clerk.user;
-                if (user) {
-                    renderSignedIn(user);
-                } else {
-                    renderSignedOut();
+            function triggerAnimation() {
+                if (animated) return;
+                animated = true;
+                animationToken += 1;
+                if (membersEl) animateCount(membersEl, parseTarget(membersEl), '+', animationToken);
+                if (clubsEl) animateCount(clubsEl, parseTarget(clubsEl), '+', animationToken);
+                if (yearsEl) animateCount(yearsEl, parseTarget(yearsEl), '', animationToken);
+            }
+
+            function updateTargets(members, clubs, years) {
+                if (membersEl) membersEl.setAttribute('data-target', members);
+                if (clubsEl) clubsEl.setAttribute('data-target', clubs);
+                if (yearsEl) yearsEl.setAttribute('data-target', years);
+                if (animated) {
+                    animationToken += 1;
+                    if (membersEl) membersEl.textContent = members + '+';
+                    if (clubsEl) clubsEl.textContent = clubs + '+';
+                    if (yearsEl) yearsEl.textContent = years;
                 }
             }
 
-            function renderSignedIn(user) {
-                var container = document.getElementById('clerk-auth-container');
-                if (!container) return;
-                container.innerHTML =
-                    '<div class="clerk-user-menu">' +
-                        '<span class="clerk-user-name">' + escapeHtml(user.fullName || user.primaryEmailAddress) + '</span>' +
-                        '<button class="clerk-sign-out-btn" id="clerkSignOut">Sign Out</button>' +
-                    '</div>';
-                document.getElementById('clerkSignOut').addEventListener('click', function () {
-                    window.Clerk.signOut();
-                });
+            function fallbackStats() {
+                updateTargets(34, 16, 69);
+                triggerAnimation();
             }
 
-            function renderSignedOut() {
-                var container = document.getElementById('clerk-auth-container');
-                if (!container) return;
-                container.innerHTML =
-                    '<button class="clerk-sign-in-btn" id="clerkSignIn">Sign In</button>';
-                document.getElementById('clerkSignIn').addEventListener('click', function () {
-                    window.Clerk.openSignIn();
-                });
-            }
+            fetch('/api/stats', { signal: AbortSignal.timeout(5000) })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Not OK');
+                    return r.json();
+                })
+                .then(function (data) {
+                    var m = data.members != null ? data.members : 34;
+                    var c = data.clubs != null ? data.clubs : 16;
+                    var y = data.years != null ? data.years : 69;
+                    updateTargets(m, c, y);
+                    triggerAnimation();
+                })
+                .catch(fallbackStats);
 
-            function escapeHtml(str) {
-                if (!str) return '';
-                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            triggerAnimation();
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.5 });
+                var proofEl = document.querySelector('.landing-proof');
+                if (proofEl) observer.observe(proofEl);
+            } else {
+                setTimeout(triggerAnimation, 300);
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            var slides = document.querySelectorAll('.service-slide');
+            if (!slides.length) return;
+
+            if ('IntersectionObserver' in window) {
+                var slideObserver = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-view');
+                            slideObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.22, rootMargin: '0px 0px -40px 0px' });
+
+                slides.forEach(function (slide) {
+                    slideObserver.observe(slide);
+                });
+            } else {
+                slides.forEach(function (slide) {
+                    slide.classList.add('in-view');
+                });
             }
         })();
     </script>

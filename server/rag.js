@@ -7,6 +7,8 @@ const EMBEDDING_CACHE = path.join(__dirname, '..', 'data', 'embeddings.json');
 let members = [];
 let memberEmbeddings = []; // { id, embedding: number[] }
 let embeddingDim = 0;
+let memberSignature = '';
+let embeddingSignature = '';
 
 /**
  * Load members from the static members.js file.
@@ -34,8 +36,33 @@ function getStaticMembers() {
  */
 function setMembers(newMembers) {
     members = newMembers;
+    memberSignature = computeMembersSignature(members);
     module.exports.members = members;
     return members;
+}
+
+function computeMembersSignature(list) {
+    return (list || []).map(m => [
+        m.id,
+        m.updated_at,
+        m.name,
+        m.designation,
+        m.club,
+        m.profession,
+        m.specialty,
+        m.location,
+        m.year_of_joining,
+        m.show_phone,
+        m.show_email
+    ].join(':')).join('|');
+}
+
+function writeEmbeddingCache(payload) {
+    try {
+        fs.writeFileSync(EMBEDDING_CACHE, JSON.stringify(payload, null, 2));
+    } catch (e) {
+        console.warn('[RAG] Could not write embedding cache:', e.message);
+    }
 }
 
 /**
@@ -47,6 +74,7 @@ function buildMemberPassage(m) {
         m.designation,
         m.club,
         m.profession,
+        m.specialty,
         m.location,
         m.address
     ].filter(Boolean).join(' | ');
@@ -109,6 +137,7 @@ function cosineSimilarity(a, b) {
  * Optionally tries DeepSeek embeddings if API key is available.
  */
 async function buildEmbeddings(apiKey) {
+    const targetSignature = memberSignature || computeMembersSignature(members);
     const passages = members.map(buildMemberPassage);
     const vocab = buildVocab(passages);
 
@@ -133,10 +162,16 @@ async function buildEmbeddings(apiKey) {
     if (apiKey && fs.existsSync(EMBEDDING_CACHE)) {
         try {
             const cached = JSON.parse(fs.readFileSync(EMBEDDING_CACHE, 'utf-8'));
-            if (cached.count === members.length) {
+            if (
+                cached.signature &&
+                cached.signature === targetSignature &&
+                Array.isArray(cached.embeddings) &&
+                Array.isArray(cached.embeddings[0]?.embedding)
+            ) {
                 console.log('[RAG] Using cached DeepSeek embeddings');
                 memberEmbeddings = cached.embeddings;
                 embeddingDim = memberEmbeddings[0]?.embedding?.length || 0;
+                embeddingSignature = targetSignature;
                 return;
             }
         } catch (_) { /* fall through */ }
@@ -167,8 +202,9 @@ async function buildEmbeddings(apiKey) {
             }
             memberEmbeddings = embeddings;
             embeddingDim = embeddings[0].embedding.length;
+            embeddingSignature = targetSignature;
             // Cache to disk
-            fs.writeFileSync(EMBEDDING_CACHE, JSON.stringify({ count: members.length, embeddings }, null, 2));
+            writeEmbeddingCache({ count: members.length, signature: targetSignature, embeddings });
             console.log('[RAG] DeepSeek embeddings generated & cached');
             return;
         } catch (e) {
@@ -183,15 +219,25 @@ async function buildEmbeddings(apiKey) {
         id: m.id,
         embedding: tfidfVector(tokenize(passages[i]), vocab, idf)
     }));
+    embeddingSignature = targetSignature;
 
     // Also persist vocab/idf for query vectorization later
     const meta = {
         count: members.length,
+        signature: targetSignature,
         vocab: Array.from(vocab.entries()),
         idf: Array.from(idf.entries()),
         embeddings: memberEmbeddings.map(e => ({ id: e.id }))
     };
-    fs.writeFileSync(EMBEDDING_CACHE, JSON.stringify(meta, null, 2));
+    writeEmbeddingCache(meta);
+}
+
+async function ensureEmbeddings(apiKey) {
+    const targetSignature = memberSignature || computeMembersSignature(members);
+    if (memberEmbeddings.length > 0 && embeddingSignature === targetSignature) {
+        return;
+    }
+    await buildEmbeddings(apiKey);
 }
 
 /**
@@ -208,8 +254,10 @@ function vectorizeQuery(query) {
     if (fs.existsSync(EMBEDDING_CACHE)) {
         try {
             const cached = JSON.parse(fs.readFileSync(EMBEDDING_CACHE, 'utf-8'));
-            vocab = new Map(cached.vocab || []);
-            idf = new Map(cached.idf || []);
+            if (cached.signature === (memberSignature || computeMembersSignature(members))) {
+                vocab = new Map(cached.vocab || []);
+                idf = new Map(cached.idf || []);
+            }
         } catch (_) { }
     }
 
@@ -240,8 +288,9 @@ function searchMembers(query, topK = 5) {
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, topK).map(s => {
         const member = members.find(m => m.id === s.id);
+        if (!member) return null;
         return { ...member, relevance: Math.round(s.score * 100) / 100 };
-    });
+    }).filter(Boolean);
 }
 
 /**
@@ -277,12 +326,14 @@ function keywordOverlapScore(query, member) {
 
 // Load static members initially so the module has data at import time
 members = getStaticMembers();
+memberSignature = computeMembersSignature(members);
 console.log('[RAG] Initialized with', members.length, 'static members');
 
 module.exports = {
     getStaticMembers,
     setMembers,
     buildEmbeddings,
+    ensureEmbeddings,
     searchMembers,
     buildMemberPassage,
     members

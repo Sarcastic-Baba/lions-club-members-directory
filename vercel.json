@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/server" },
+    { "source": "/(directory|feed|profile|admin|dg-office|gallery)\\.html", "destination": "/api/server" },
+    { "source": "/data/(.*)", "destination": "/api/server" }
+  ]
+}

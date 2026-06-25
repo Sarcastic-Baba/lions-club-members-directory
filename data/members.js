@@ -6,9 +6,11 @@ window.LIONS_MEMBERS = [
     "designation": "President",
     "location": "Patna",
     "profession": "Advocate",
+    "specialty": "Criminal Law",
     "phone": "+91-9876543210",
     "email": "rajesh.kumar@lions321c1.org",
-    "address": "12, Gandhi Maidan Road, Patna, Bihar"
+    "address": "12, Gandhi Maidan Road, Patna, Bihar",
+    "year_of_joining": 2010
   },
   {
     "id": 2,
@@ -17,9 +19,11 @@ window.LIONS_MEMBERS = [
     "designation": "Secretary",
     "location": "Gaya",
     "profession": "Doctor",
+    "specialty": "General Medicine",
     "phone": "+91-9876543211",
     "email": "sunita.sharma@lions321c1.org",
-    "address": "45, Medical College Road, Gaya, Bihar"
+    "address": "45, Medical College Road, Gaya, Bihar",
+    "year_of_joining": 2012
   },
   {
     "id": 3,
@@ -28,9 +32,11 @@ window.LIONS_MEMBERS = [
     "designation": "Treasurer",
     "location": "Muzaffarpur",
     "profession": "Chartered Accountant",
+    "specialty": "Auditing & Taxation",
     "phone": "+91-9876543212",
     "email": "amit.verma@lions321c1.org",
-    "address": "78, Company Bagh, Muzaffarpur, Bihar"
+    "address": "78, Company Bagh, Muzaffarpur, Bihar",
+    "year_of_joining": 2015
   },
   {
     "id": 4,
@@ -39,9 +45,11 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Patna",
     "profession": "Teacher",
+    "specialty": "Mathematics",
     "phone": "+91-9876543213",
     "email": "priya.singh@lions321c1.org",
-    "address": "34, Boring Road, Patna, Bihar"
+    "address": "34, Boring Road, Patna, Bihar",
+    "year_of_joining": 2018
   },
   {
     "id": 5,
@@ -50,9 +58,11 @@ window.LIONS_MEMBERS = [
     "designation": "Vice President",
     "location": "Bhagalpur",
     "profession": "Businessman",
+    "specialty": "Textile Industry",
     "phone": "+91-9876543214",
     "email": "vikash.anand@lions321c1.org",
-    "address": "56, MG Road, Bhagalpur, Bihar"
+    "address": "56, MG Road, Bhagalpur, Bihar",
+    "year_of_joining": 2011
   },
   {
     "id": 6,
@@ -61,9 +71,11 @@ window.LIONS_MEMBERS = [
     "designation": "Joint Secretary",
     "location": "Darbhanga",
     "profession": "Social Worker",
+    "specialty": "Women Empowerment",
     "phone": "+91-9876543215",
     "email": "meena.devi@lions321c1.org",
-    "address": "23, Laheriasarai, Darbhanga, Bihar"
+    "address": "23, Laheriasarai, Darbhanga, Bihar",
+    "year_of_joining": 2013
   },
   {
     "id": 7,
@@ -72,9 +84,11 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Patna",
     "profession": "Doctor",
+    "specialty": "Cardiology",
     "phone": "+91-9876543216",
     "email": "suresh.prasad@lions321c1.org",
-    "address": "89, Kankarbagh, Patna, Bihar"
+    "address": "89, Kankarbagh, Patna, Bihar",
+    "year_of_joining": 2014
   },
   {
     "id": 8,
@@ -83,9 +97,11 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Hajipur",
     "profession": "Engineer",
+    "specialty": "Civil Engineering",
     "phone": "+91-9876543217",
     "email": "anjali.gupta@lions321c1.org",
-    "address": "12, Industrial Area, Hajipur, Bihar"
+    "address": "12, Industrial Area, Hajipur, Bihar",
+    "year_of_joining": 2017
   },
   {
     "id": 9,
@@ -94,9 +110,11 @@ window.LIONS_MEMBERS = [
     "designation": "President",
     "location": "Purnia",
     "profession": "Businessman",
+    "specialty": "Agriculture & Trading",
     "phone": "+91-9876543218",
     "email": "ravi.ranjan@lions321c1.org",
-    "address": "67, Line Bazar, Purnia, Bihar"
+    "address": "67, Line Bazar, Purnia, Bihar",
+    "year_of_joining": 2009
   },
   {
     "id": 10,
@@ -105,9 +123,11 @@ window.LIONS_MEMBERS = [
     "designation": "Treasurer",
     "location": "Patna",
     "profession": "Chartered Accountant",
+    "specialty": "Corporate Finance",
     "phone": "+91-9876543219",
     "email": "kavita.jha@lions321c1.org",
-    "address": "90, Bailey Road, Patna, Bihar"
+    "address": "90, Bailey Road, Patna, Bihar",
+    "year_of_joining": 2016
   },
   {
     "id": 11,
@@ -116,9 +136,11 @@ window.LIONS_MEMBERS = [
     "designation": "Secretary",
     "location": "Samastipur",
     "profession": "Professor",
+    "specialty": "Political Science",
     "phone": "+91-9876543220",
     "email": "manoj.tiwari@lions321c1.org",
-    "address": "34, College Road, Samastipur, Bihar"
+    "address": "34, College Road, Samastipur, Bihar",
+    "year_of_joining": 2012
   },
   {
     "id": 12,
@@ -127,9 +149,11 @@ window.LIONS_MEMBERS = [
     "designation": "Vice President",
     "location": "Patna",
     "profession": "Advocate",
+    "specialty": "Family Law",
     "phone": "+91-9876543221",
     "email": "rekha.sinha@lions321c1.org",
-    "address": "56, Patna High Court, Patna, Bihar"
+    "address": "56, Patna High Court, Patna, Bihar",
+    "year_of_joining": 2011
   },
   {
     "id": 13,
@@ -138,9 +162,11 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Chapra",
     "profession": "Pharmacist",
+    "specialty": "Clinical Pharmacy",
     "phone": "+91-9876543222",
     "email": "arun.kumar@lions321c1.org",
-    "address": "78, Sadar Bazar, Chapra, Bihar"
+    "address": "78, Sadar Bazar, Chapra, Bihar",
+    "year_of_joining": 2019
   },
   {
     "id": 14,
@@ -149,9 +175,11 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Motihari",
     "profession": "Teacher",
+    "specialty": "Science & Biology",
     "phone": "+91-9876543223",
     "email": "nisha.kumari@lions321c1.org",
-    "address": "12, Bapudham, Motihari, Bihar"
+    "address": "12, Bapudham, Motihari, Bihar",
+    "year_of_joining": 2020
   },
   {
     "id": 15,
@@ -160,8 +188,10 @@ window.LIONS_MEMBERS = [
     "designation": "Member",
     "location": "Patna",
     "profession": "Engineer",
+    "specialty": "Software Engineering",
     "phone": "+91-9876543224",
     "email": "sanjay.singh@lions321c1.org",
-    "address": "34, Rajendra Nagar, Patna, Bihar"
+    "address": "34, Rajendra Nagar, Patna, Bihar",
+    "year_of_joining": 2018
   }
 ];

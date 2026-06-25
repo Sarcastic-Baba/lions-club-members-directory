@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery - Lions Club District 321 C1</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script>document.documentElement.classList.add('auth-guard-pending');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-top">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                    </div>
+                    <div class="logo-text">
+                        <h1>Lions Club</h1>
+                        <p>District 321 C1</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div id="auth-container"></div>
+                    <div class="header-badge">
+                        <span class="motto">Compassion in Action</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container app-page-shell">
+        <nav class="feed-nav">
+            <a href="index.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                Home
+            </a>
+            <a href="directory.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Directory
+            </a>
+            <a href="feed.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M2 7h20"/></svg>
+                Feed
+            </a>
+            <a href="gallery.html" class="feed-nav-link active">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                Gallery
+            </a>
+            <a href="profile.html" class="feed-nav-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                My Profile
+            </a>
+        </nav>
+
+        <section class="gallery-section">
+            <div class="gallery-header">
+                <span class="section-eyebrow">Our Journey</span>
+                <h2>Service in Pictures</h2>
+                <p>Moments captured from health camps, tree plantations, relief drives, and youth programs across District 321 C1.</p>
+            </div>
+
+            <div class="gallery-grid" id="galleryGrid">
+                <div class="gallery-loading" id="galleryLoading">
+                    <div class="spinner"></div>
+                    <span>Loading gallery...</span>
+                </div>
+            </div>
+
+            <div class="gallery-empty hidden" id="galleryEmpty">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                </svg>
+                <h3>No photos yet</h3>
+                <p>Check back soon for service photos from across the district.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Lions Club District 321 C1</h3>
+                <p>Serving communities across Bihar since 1957</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="dg-office.html">Contact DG Office</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Lions Club International District 321 C1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="lightbox hidden" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose">&times;</button>
+        <img src="" alt="" id="lightboxImg">
+        <button class="lightbox-prev" id="lightboxPrev">&lsaquo;</button>
+        <button class="lightbox-next" id="lightboxNext">&rsaquo;</button>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/auth-guard.js"></script>
+    <script>
+        Auth.init().then(function () { Auth.renderUI('auth-container'); });
+
+        (function () {
+            var grid = document.getElementById('galleryGrid');
+            var loading = document.getElementById('galleryLoading');
+            var empty = document.getElementById('galleryEmpty');
+            var lightbox = document.getElementById('lightbox');
+            var lightboxImg = document.getElementById('lightboxImg');
+            var lightboxCaption = document.getElementById('lightboxCaption');
+            var images = [];
+            var currentIndex = 0;
+
+            function getAuthHeaders() {
+                return Auth.getToken().then(function (token) {
+                    var headers = { 'Content-Type': 'application/json' };
+                    if (token) headers.Authorization = 'Bearer ' + token;
+                    return headers;
+                });
+            }
+
+            function openLightbox(index) {
+                currentIndex = index;
+                var item = images[index];
+                lightboxImg.src = item.url;
+                lightboxCaption.textContent = item.caption || '';
+                lightbox.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeLightbox() {
+                lightbox.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+
+            function navigateLightbox(dir) {
+                currentIndex = (currentIndex + dir + images.length) % images.length;
+                var item = images[currentIndex];
+                lightboxImg.src = item.url;
+                lightboxCaption.textContent = item.caption || '';
+            }
+
+            document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+            lightbox.addEventListener('click', function (e) {
+                if (e.target === lightbox) closeLightbox();
+            });
+            document.getElementById('lightboxPrev').addEventListener('click', function () { navigateLightbox(-1); });
+            document.getElementById('lightboxNext').addEventListener('click', function () { navigateLightbox(1); });
+            document.addEventListener('keydown', function (e) {
+                if (lightbox.classList.contains('hidden')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                if (e.key === 'ArrowRight') navigateLightbox(1);
+            });
+
+            function renderGallery(items) {
+                images = items;
+                if (!items.length) {
+                    loading.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                loading.classList.add('hidden');
+                var fragment = document.createDocumentFragment();
+                items.forEach(function (item, i) {
+                    var card = document.createElement('article');
+                    card.className = 'gallery-card';
+                    var imageWrap = document.createElement('div');
+                    imageWrap.className = 'gallery-card-img';
+                    var img = document.createElement('img');
+                    img.src = item.url || '';
+                    img.alt = item.caption || 'Gallery photo';
+                    img.loading = 'lazy';
+                    imageWrap.appendChild(img);
+                    card.appendChild(imageWrap);
+                    if (item.caption) {
+                        var caption = document.createElement('div');
+                        caption.className = 'gallery-card-caption';
+                        var text = document.createElement('p');
+                        text.textContent = item.caption;
+                        caption.appendChild(text);
+                        card.appendChild(caption);
+                    }
+                    card.addEventListener('click', function () { openLightbox(i); });
+                    fragment.appendChild(card);
+                });
+                grid.appendChild(fragment);
+            }
+
+            Auth.init().then(getAuthHeaders).then(function (headers) {
+                return fetch('/api/gallery', { headers: headers });
+            })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Failed');
+                    return r.json();
+                })
+                .then(function (data) {
+                    renderGallery(data.images || []);
+                })
+                .catch(function () {
+                    loading.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                });
+        })();
+    </script>
+</body>
+</html>

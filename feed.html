@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Feed - Lions Club District 321 C1</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script>document.documentElement.classList.add('auth-guard-pending');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="app-immersive-page">
+    <header class="header">
+        <div class="header-top">
+            <div class="container header-container">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                    </div>
+                    <div class="logo-text">
+                        <h1>Lions Club</h1>
+                        <p>District 321 C1</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div id="auth-container"></div>
+                    <div class="header-badge">
+                        <span class="motto">Compassion in Action</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="header-banner">
+            <div class="container">
+                <h2>Community Feed</h2>
+                <p>Share updates, photos, and connect with fellow Lions</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container feed-page-shell">
+        <div class="feed-page-layout">
+            <aside class="feed-sidebar" aria-label="Feed navigation">
+                <nav class="feed-nav">
+                    <a href="index.html" class="feed-nav-link">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Home
+                    </a>
+                    <a href="directory.html" class="feed-nav-link">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Directory
+                    </a>
+                    <a href="feed.html" class="feed-nav-link active">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="3"/><path d="M2 7h20"/><path d="M8 11h8"/><path d="M8 15h6"/>
+                        </svg>
+                        Feed
+                    </a>
+                    <a href="gallery.html" class="feed-nav-link">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        Gallery
+                    </a>
+                    <a href="profile.html" class="feed-nav-link">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        My Profile
+                    </a>
+                </nav>
+            </aside>
+
+            <section class="feed-content">
+                <div class="immersive-page-header">
+                    <span class="section-eyebrow">Community</span>
+                    <h2>Community Feed</h2>
+                    <p>Share updates, photos, and moments from clubs across District 321 C1.</p>
+                </div>
+
+                <!-- Auth Required Message -->
+                <div id="feedAuthRequired" class="feed-auth-required hidden">
+                    <div class="feed-message-card">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <h3>Sign in to view the Community Feed</h3>
+                        <p>The feed is visible only to verified Lions Club members.</p>
+                        <button class="supabase-auth-btn supabase-auth-btn-signin" id="feedSignInBtn">Sign In</button>
+                    </div>
+                </div>
+
+                <!-- Verification Required -->
+                <div id="feedVerificationRequired" class="feed-auth-required hidden">
+                    <div class="feed-message-card">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        <h3>Profile Verification Required</h3>
+                        <p>Your profile must be verified by an admin before you can access the Community Feed.</p>
+                        <a href="profile.html" class="btn-save-profile">Go to My Profile</a>
+                    </div>
+                </div>
+
+                <!-- Main Feed Content -->
+                <div id="feedContainer" class="feed-container hidden">
+                    <!-- Post Composer -->
+                    <div id="feedComposer" class="feed-composer">
+                        <div class="composer-header">
+                            <div class="composer-avatar" id="composerAvatar"></div>
+                            <span class="composer-label" id="composerLabel">Share something with the district...</span>
+                        </div>
+                        <div class="composer-body" id="composerBody" style="display:none;">
+                            <textarea id="composerText" class="composer-textarea" placeholder="What's happening in your club? Share news, photos, or updates with fellow Lions across District 321 C1..." rows="3" maxlength="2000"></textarea>
+                            <div class="composer-char-count">
+                                <span id="charCount">0</span>/2000
+                            </div>
+                            <!-- Image previews -->
+                            <div id="composerImages" class="composer-images"></div>
+                            <!-- Actions -->
+                            <div class="composer-actions">
+                                <div class="composer-actions-left">
+                                    <button id="btnAddImage" class="composer-btn" title="Add images">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                                            <polyline points="21 15 16 10 5 21"/>
+                                        </svg>
+                                        Photos
+                                    </button>
+                                    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none;">
+                                </div>
+                                <div class="composer-actions-right">
+                                    <button id="btnCancelPost" class="composer-btn composer-btn-cancel">Cancel</button>
+                                    <button id="btnSubmitPost" class="composer-btn composer-btn-submit" disabled>Post</button>
+                                </div>
+                            </div>
+                            <div id="composerError" class="composer-error hidden"></div>
+                            <div id="composerLoading" class="composer-loading hidden">
+                                <div class="ai-loading-spinner" style="width:20px;height:20px;"></div>
+                                <span>Posting...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feed Posts -->
+                    <div id="feedPosts" class="feed-posts"></div>
+
+                    <!-- Loading indicator -->
+                    <div id="feedLoading" class="feed-loading hidden">
+                        <div class="ai-loading-spinner"></div>
+                        <p>Loading posts...</p>
+                    </div>
+
+                    <!-- No posts -->
+                    <div id="feedEmpty" class="feed-empty hidden">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <h3>No posts yet</h3>
+                        <p>Be the first to share something with the district!</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="feedError" class="ai-error hidden"></div>
+                </div>
+            </section>
+            <aside class="right-panel" aria-label="District highlights">
+                <section class="right-panel-card">
+                    <div class="right-panel-heading">Upcoming District Events</div>
+                    <ul class="right-panel-list">
+                        <li><span class="right-panel-dot"></span><span>Installation Ceremony</span></li>
+                        <li><span class="right-panel-dot"></span><span>Blood Donation Camp</span></li>
+                        <li><span class="right-panel-dot"></span><span>Cabinet Meeting</span></li>
+                    </ul>
+                </section>
+                <section class="right-panel-card">
+                    <div class="right-panel-heading">Active Clubs</div>
+                    <div class="right-panel-metric"><strong>16</strong><span>Clubs serving across District 321 C1</span></div>
+                    <a href="directory.html" class="right-panel-link">Browse Directory</a>
+                </section>
+                <section class="right-panel-card">
+                    <div class="right-panel-heading">Top Contributors</div>
+                    <ol class="right-panel-ranked">
+                        <li><span>Lions Club Patna Central</span><small>Health camps and member outreach</small></li>
+                        <li><span>Lions Club Gaya</span><small>Blood donation and youth programs</small></li>
+                        <li><span>Lions Club Muzaffarpur</span><small>Relief drives and service reporting</small></li>
+                    </ol>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Lions Club District 321 C1</h3>
+                <p>Serving communities across Bihar since 1957</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="dg-office.html">Contact DG Office</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Lions Club International District 321 C1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Image Lightbox -->
+    <div id="lightbox" class="lightbox hidden">
+        <button class="lightbox-close" id="lightboxClose">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <img id="lightboxImg" src="" alt="">
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Report Post</h3>
+            <p class="modal-desc">Why are you reporting this post?</p>
+            <div class="report-options">
+                <label class="report-option"><input type="radio" name="reportReason" value="spam"> Spam</label>
+                <label class="report-option"><input type="radio" name="reportReason" value="offensive"> Offensive Content</label>
+                <label class="report-option"><input type="radio" name="reportReason" value="misinformation"> Misinformation</label>
+                <label class="report-option"><input type="radio" name="reportReason" value="other"> Other</label>
+            </div>
+            <div class="modal-actions">
+                <button id="btnCancelReport" class="composer-btn composer-btn-cancel">Cancel</button>
+                <button id="btnSubmitReport" class="composer-btn composer-btn-submit" disabled>Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/auth-guard.js"></script>
+    <script src="js/feed.js"></script>
+    <script src="js/right-panel.js"></script>
+    <script>
+        Auth.init().then(function () {
+            Auth.renderUI('auth-container');
+            Auth.onChange(function (isSignedIn) {
+                if (typeof Feed !== 'undefined' && Feed.onAuthChange) {
+                    Feed.onAuthChange(isSignedIn);
+                }
+            });
+            if (typeof Feed !== 'undefined' && Feed.onAuthChange) {
+                Feed.onAuthChange(!!Auth.getUser());
+            }
+        });
+    </script>
+</body>
+</html>
