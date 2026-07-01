@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="image/Lions_Clubs_International_logo.svg.png">
     <title>My Profile - Lions Club District 321 C1</title>
     <link rel="stylesheet" href="css/style.css">
     <script>document.documentElement.classList.add('auth-guard-pending');</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="app-immersive-page">
     <header class="header">
@@ -16,7 +17,7 @@
             <div class="container header-container">
                 <div class="logo-area">
                     <div class="logo-icon">
-                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                        <img src="image/Lions_Clubs_International_logo.svg.png" alt="Lions Clubs International logo">
                     </div>
                     <div class="logo-text">
                         <h1>Lions Club</h1>
@@ -204,8 +205,8 @@
                 <p>Serving communities across Bihar since 1957</p>
             </div>
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Use</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Use</a>
                 <a href="dg-office.html">Contact DG Office</a>
             </div>
             <div class="footer-copy">
@@ -216,6 +217,7 @@
 
     <script src="js/auth.js"></script>
     <script src="js/auth-guard.js"></script>
+    <script src="js/admin-nav.js"></script>
     <script>
         (function () {
             var authReady = false;
@@ -393,7 +395,7 @@
                     return r.json();
                 })
                 .then(function (data) {
-                    if (data.profile && (data.profile.status === 'pending' || data.profile.role === 'guest')) {
+                    if (data.profile && data.profile.status === 'pending') {
                         showAlert('Profile saved. An admin must verify it before member-only pages unlock.', 'success');
                     } else {
                         showAlert('Profile saved successfully!', 'success');

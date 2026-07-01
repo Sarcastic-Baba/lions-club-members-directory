@@ -10,6 +10,15 @@ let embeddingDim = 0;
 let memberSignature = '';
 let embeddingSignature = '';
 
+const MIN_RELEVANCE_SCORE = 0;
+const RELATED_QUERY_TERMS = {
+    dentist: ['doctor'],
+    dental: ['doctor'],
+    orthodontist: ['doctor'],
+    teeth: ['doctor'],
+    tooth: ['doctor']
+};
+
 /**
  * Load members from the static members.js file.
  * Returns parsed members array without mutating the module-level variable.
@@ -69,6 +78,7 @@ function writeEmbeddingCache(payload) {
  * Build a searchable text passage for a member.
  */
 function buildMemberPassage(m) {
+    if (!m) return '';
     return [
         m.name,
         m.designation,
@@ -77,7 +87,7 @@ function buildMemberPassage(m) {
         m.specialty,
         m.location,
         m.address
-    ].filter(Boolean).join(' | ');
+    ].map(toSearchText).filter(Boolean).join(' | ');
 }
 
 /**
@@ -97,11 +107,47 @@ function buildVocab(passages) {
 }
 
 function tokenize(text) {
-    return text
+    return toSearchText(text)
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .split(/\s+/)
         .filter(t => t.length > 1);
+}
+
+function toSearchText(value) {
+    if (value == null) return '';
+    return String(value);
+}
+
+function tokenizeQuery(query) {
+    const tokens = tokenize(query);
+    const expanded = new Set(tokens);
+    for (const token of tokens) {
+        const related = RELATED_QUERY_TERMS[token] || [];
+        for (const term of related) {
+            expanded.add(term);
+        }
+    }
+    return Array.from(expanded);
+}
+
+function hasAnyTokenOverlap(tokens, otherTokens) {
+    const lookup = new Set(otherTokens);
+    return tokens.some(token => lookup.has(token));
+}
+
+function getProfessionalTokens(member) {
+    if (!member) return [];
+    return tokenize([
+        member.profession,
+        member.specialty,
+        member.designation
+    ].map(toSearchText).filter(Boolean).join(' '));
+}
+
+function queryHasProfessionalIntent(queryTokens) {
+    if (!queryTokens.length) return false;
+    return members.some(member => hasAnyTokenOverlap(queryTokens, getProfessionalTokens(member)));
 }
 
 function tfidfVector(tokens, vocab, idf) {
@@ -134,7 +180,7 @@ function cosineSimilarity(a, b) {
 /**
  * Compute embeddings for all members using local TF-IDF vectors
  * (no external API needed — fast, zero-cost retrieval).
- * Optionally tries DeepSeek embeddings if API key is available.
+ * Optionally tries OpenRouter embeddings if API key is available.
  */
 async function buildEmbeddings(apiKey) {
     const targetSignature = memberSignature || computeMembersSignature(members);
@@ -158,7 +204,7 @@ async function buildEmbeddings(apiKey) {
         idf.set(word, Math.log((N + 1) / (count + 1)) + 1);
     }
 
-    // Try loading cached DeepSeek embeddings
+    // Try loading cached embeddings
     if (apiKey && fs.existsSync(EMBEDDING_CACHE)) {
         try {
             const cached = JSON.parse(fs.readFileSync(EMBEDDING_CACHE, 'utf-8'));
@@ -168,7 +214,7 @@ async function buildEmbeddings(apiKey) {
                 Array.isArray(cached.embeddings) &&
                 Array.isArray(cached.embeddings[0]?.embedding)
             ) {
-                console.log('[RAG] Using cached DeepSeek embeddings');
+                console.log('[RAG] Using cached embeddings');
                 memberEmbeddings = cached.embeddings;
                 embeddingDim = memberEmbeddings[0]?.embedding?.length || 0;
                 embeddingSignature = targetSignature;
@@ -177,20 +223,22 @@ async function buildEmbeddings(apiKey) {
         } catch (_) { /* fall through */ }
     }
 
-    // Try DeepSeek embeddings API
+    // Try OpenRouter embeddings API
     if (apiKey) {
         try {
-            console.log('[RAG] Generating DeepSeek embeddings for', members.length, 'members...');
+            console.log('[RAG] Generating OpenRouter embeddings for', members.length, 'members...');
             const embeddings = [];
             for (let i = 0; i < members.length; i++) {
-                const resp = await fetch('https://api.deepseek.com/v1/embeddings', {
+                const resp = await fetch('https://openrouter.ai/api/v1/embeddings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': 'https://lions-club-directory.vercel.app',
+                        'X-Title': 'Lions Club District 321 C1 Directory'
                     },
                     body: JSON.stringify({
-                        model: 'deepseek-chat',
+                        model: 'openai/text-embedding-3-small',
                         input: passages[i]
                     })
                 });
@@ -205,10 +253,10 @@ async function buildEmbeddings(apiKey) {
             embeddingSignature = targetSignature;
             // Cache to disk
             writeEmbeddingCache({ count: members.length, signature: targetSignature, embeddings });
-            console.log('[RAG] DeepSeek embeddings generated & cached');
+            console.log('[RAG] OpenRouter embeddings generated & cached');
             return;
         } catch (e) {
-            console.warn('[RAG] DeepSeek embeddings failed, falling back to TF-IDF:', e.message);
+            console.warn('[RAG] OpenRouter embeddings failed, falling back to TF-IDF:', e.message);
         }
     }
 
@@ -262,7 +310,7 @@ function vectorizeQuery(query) {
     }
 
     if (!vocab || vocab.size === 0) return [];
-    const tokens = tokenize(query);
+    const tokens = tokenizeQuery(query);
     return tfidfVector(tokens, vocab, idf);
 }
 
@@ -274,16 +322,24 @@ function searchMembers(query, topK = 5) {
     if (memberEmbeddings.length === 0) return [];
 
     const queryVec = vectorizeQuery(query);
+    const queryTokens = tokenizeQuery(query);
+    const requireProfessionalMatch = queryHasProfessionalIntent(queryTokens);
 
     const scored = memberEmbeddings.map(({ id, embedding }) => {
+        const member = members.find(m => m.id === id);
+        if (!member) return { id, score: 0 };
+        if (requireProfessionalMatch && !hasAnyTokenOverlap(queryTokens, getProfessionalTokens(member))) {
+            return { id, score: 0 };
+        }
+
         let score;
         if (queryVec && queryVec.length > 0 && embedding.length === queryVec.length) {
             score = cosineSimilarity(queryVec, embedding);
         } else {
-            score = keywordOverlapScore(query, members.find(m => m.id === id));
+            score = keywordOverlapScore(query, member, queryTokens);
         }
         return { id, score };
-    });
+    }).filter(s => s.score > MIN_RELEVANCE_SCORE);
 
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, topK).map(s => {
@@ -296,9 +352,10 @@ function searchMembers(query, topK = 5) {
 /**
  * Keyword overlap fallback scorer
  */
-function keywordOverlapScore(query, member) {
+function keywordOverlapScore(query, member, queryTokens) {
     if (!member) return 0;
-    const qTokens = new Set(tokenize(query));
+    const queryText = toSearchText(query).toLowerCase();
+    const qTokens = new Set(queryTokens || tokenizeQuery(query));
     const text = buildMemberPassage(member);
     const mTokens = tokenize(text);
     let overlap = 0;
@@ -312,15 +369,15 @@ function keywordOverlapScore(query, member) {
         }
     }
     const jaccard = seen.size / (qTokens.size + mTokens.length - seen.size || 1);
-    const exactBonus = (
-        member.name.toLowerCase().includes(query.toLowerCase()) ? 0.3 : 0
+    const exactBonus = queryText ? (
+        toSearchText(member.name).toLowerCase().includes(queryText) ? 0.3 : 0
     ) + (
-        member.location.toLowerCase().includes(query.toLowerCase()) ? 0.2 : 0
+        toSearchText(member.location).toLowerCase().includes(queryText) ? 0.2 : 0
     ) + (
-        member.profession.toLowerCase().includes(query.toLowerCase()) ? 0.2 : 0
+        toSearchText(member.profession).toLowerCase().includes(queryText) ? 0.2 : 0
     ) + (
-        member.club.toLowerCase().includes(query.toLowerCase()) ? 0.1 : 0
-    );
+        toSearchText(member.club).toLowerCase().includes(queryText) ? 0.1 : 0
+    ) : 0;
     return jaccard + exactBonus;
 }
 

@@ -58,13 +58,13 @@ async function run() {
         check('Clerk Secret Key', clerkSecretKey.startsWith('sk_'), clerkSecretKey.substring(0, 12) + '...');
     }
 
-    // 3. DeepSeek
-    console.log('\n--- DeepSeek ---');
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    if (!deepseekKey || deepseekKey === 'your_deepseek_api_key_here') {
-        check('DeepSeek API', false, 'Not configured (placeholder key)');
+    // 3. OpenRouter
+    console.log('\n--- OpenRouter ---');
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
+    if (!openrouterKey || openrouterKey === 'your_openrouter_api_key_here') {
+        check('OpenRouter API', false, 'Not configured (placeholder key)');
     } else {
-        check('DeepSeek Key', true, deepseekKey.substring(0, 10) + '...');
+        check('OpenRouter Key', true, openrouterKey.substring(0, 10) + '...');
     }
 
     console.log('\n=== Summary ===');

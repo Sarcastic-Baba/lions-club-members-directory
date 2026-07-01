@@ -17,6 +17,10 @@ var Auth = (function () {
     var stylesInjected = false;
     var tempAdminConfigured = false;
     var tempAdminTokenKey = 'lions_temp_admin_token';
+    var authConfigCacheKey = 'lions_auth_config_cache';
+    var authConfigCacheMs = 10 * 60 * 1000;
+    var profileSnapshotCachePrefix = 'lions_profile_snapshot_';
+    var profileSnapshotCacheMs = 30 * 1000;
 
     function installPageTransitions() {
         if (typeof document === 'undefined') return;
@@ -123,14 +127,138 @@ var Auth = (function () {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function readCache(key, maxAgeMs) {
+        try {
+            var raw = sessionStorage.getItem(key);
+            if (!raw) return null;
+
+            var item = JSON.parse(raw);
+            if (!item || !item.savedAt || !Object.prototype.hasOwnProperty.call(item, 'value')) return null;
+
+            if (Date.now() - item.savedAt > maxAgeMs) {
+                sessionStorage.removeItem(key);
+                return null;
+            }
+
+            return item.value;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function writeCache(key, value) {
+        try {
+            sessionStorage.setItem(key, JSON.stringify({
+                savedAt: Date.now(),
+                value: value
+            }));
+        } catch (err) {}
+    }
+
+    function removeCache(key) {
+        try {
+            sessionStorage.removeItem(key);
+        } catch (err) {}
+    }
+
+    function clearCachePrefix(prefix) {
+        try {
+            for (var i = sessionStorage.length - 1; i >= 0; i--) {
+                var key = sessionStorage.key(i);
+                if (key && key.indexOf(prefix) === 0) sessionStorage.removeItem(key);
+            }
+        } catch (err) {}
+    }
+
+    function isLoginPage() {
+        return !!document.getElementById('sign-in-container') || /(^|\/)login\.html$/i.test(window.location.pathname);
+    }
+
+    function currentPage() {
+        return window.location.pathname.replace(/^\//, '') + window.location.search + window.location.hash;
+    }
+
+    function getLoginUrl() {
+        return 'login.html?next=' + encodeURIComponent(currentPage());
+    }
+
+    function getAuthConfig() {
+        var cached = readCache(authConfigCacheKey, authConfigCacheMs);
+        if (cached) return Promise.resolve(cached);
+
+        return fetch('/api/auth/config', { cache: 'force-cache' })
+            .then(function (r) { return r.json(); })
+            .then(function (config) {
+                writeCache(authConfigCacheKey, config);
+                return config;
+            });
+    }
+
+    function getProfileCacheKey() {
+        if (!currentUser || !currentUser.id) return null;
+        return profileSnapshotCachePrefix + String(currentUser.id).replace(/[^a-zA-Z0-9._:-]/g, '_');
+    }
+
+    function normalizeProfileSnapshot(profile) {
+        if (!profile) return null;
+        return {
+            id: profile.id,
+            clerk_user_id: profile.clerk_user_id,
+            name: profile.name,
+            role: profile.role,
+            status: profile.status,
+            club: profile.club,
+            designation: profile.designation,
+            updated_at: profile.updated_at || null,
+            isTempAdmin: !!profile.isTempAdmin
+        };
+    }
+
+    function getCachedProfile() {
+        var key = getProfileCacheKey();
+        return key ? readCache(key, profileSnapshotCacheMs) : null;
+    }
+
+    function cacheProfile(profile) {
+        var key = getProfileCacheKey();
+        if (!key) return;
+
+        var snapshot = normalizeProfileSnapshot(profile);
+        if (snapshot) writeCache(key, snapshot);
+        else removeCache(key);
+    }
+
+    function getProfile(options) {
+        options = options || {};
+
+        var cached = options.forceRefresh ? null : getCachedProfile();
+        if (cached) return Promise.resolve(cached);
+
+        return getToken().then(function (token) {
+            if (!token) return null;
+            return fetch('/api/profile', {
+                cache: 'no-store',
+                headers: { Authorization: 'Bearer ' + token }
+            });
+        }).then(function (r) {
+            if (!r || !r.ok) return null;
+            return r.json();
+        }).then(function (data) {
+            var profile = data && data.profile ? data.profile : null;
+            cacheProfile(profile);
+            return normalizeProfileSnapshot(profile);
+        }).catch(function () {
+            return null;
+        });
+    }
+
     // ==================== PUBLIC API ====================
 
     function init() {
         if (initPromise) return initPromise;
         initialized = true;
 
-        initPromise = fetch('/api/auth/config')
-            .then(function (r) { return r.json(); })
+        initPromise = getAuthConfig()
             .then(function (config) {
                 tempAdminConfigured = !!config.tempAdminConfigured;
                 return restoreTempAdminSession().then(function (restored) {
@@ -146,7 +274,7 @@ var Auth = (function () {
                         return null;
                     }
                     injectStyles();
-                    return loadClerkV6(config.clerkPublishableKey);
+                    return loadClerkV6(config.clerkPublishableKey, { withUi: isLoginPage() });
                 });
             })
             .catch(function (err) {
@@ -199,7 +327,8 @@ var Auth = (function () {
         catch (e) { return null; }
     }
 
-    function loadClerkV6(publishableKey) {
+    function loadClerkV6(publishableKey, options) {
+        options = options || {};
         var domain = deriveDomain(publishableKey);
         if (!domain) {
             console.warn('[Auth] Failed to derive Clerk domain from key');
@@ -215,36 +344,20 @@ var Auth = (function () {
 
         return Promise.resolve()
             .then(function () {
-                // Step 1: Load UI bundle (with fallback)
-                return loadScriptWithFallback(uiUrl, uiUrlFallback);
+                if (!options.withUi) return null;
+                return loadScriptWithFallback(uiUrl, uiUrlFallback, 'Clerk UI');
             })
             .then(function () {
-                // Step 2: Load Clerk SDK WITH publishable key attribute (with fallback)
-                return new Promise(function (resolve, reject) {
-                    var script = document.createElement('script');
-                    script.src = sdkUrl;
-                    script.async = false;
-                    script.setAttribute('data-clerk-publishable-key', publishableKey);
-                    script.onload = resolve;
-                    script.onerror = function () {
-                        // Try fallback
-                        var fb = document.createElement('script');
-                        fb.src = sdkUrlFallback;
-                        fb.async = false;
-                        fb.setAttribute('data-clerk-publishable-key', publishableKey);
-                        fb.onload = resolve;
-                        fb.onerror = function () { reject(new Error('Clerk SDK failed to load from both CDNs')); };
-                        document.head.appendChild(fb);
-                    };
-                    document.head.appendChild(script);
-                });
+                return loadClerkSdkWithFallback(sdkUrl, sdkUrlFallback, publishableKey);
             })
             .then(function () {
-                // Step 3: Initialize Clerk with UI
                 if (!window.Clerk) throw new Error('window.Clerk not defined after loading SDK');
-                return window.Clerk.load({
-                    ui: { ClerkUI: window.__internal_ClerkUICtor }
-                });
+                if (options.withUi) {
+                    return window.Clerk.load({
+                        ui: { ClerkUI: window.__internal_ClerkUICtor }
+                    });
+                }
+                return window.Clerk.load();
             })
             .then(function () {
                 clerkInstance = window.Clerk;
@@ -252,7 +365,11 @@ var Auth = (function () {
                 currentUser = clerkInstance.user || null;
 
                 clerkInstance.addListener(function (payload) {
+                    var previousUserId = currentUser && currentUser.id;
                     currentUser = payload.user || null;
+                    if (previousUserId && (!currentUser || currentUser.id !== previousUserId)) {
+                        clearCachePrefix(profileSnapshotCachePrefix);
+                    }
                     notifyListeners();
                     var containers = document.querySelectorAll('[data-auth-ui]');
                     containers.forEach(function (el) { doRender(el); });
@@ -267,7 +384,27 @@ var Auth = (function () {
             });
     }
 
-    function loadScriptWithFallback(primaryUrl, fallbackUrl) {
+    function loadClerkSdkWithFallback(primaryUrl, fallbackUrl, publishableKey) {
+        return new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = primaryUrl;
+            script.async = false;
+            script.setAttribute('data-clerk-publishable-key', publishableKey);
+            script.onload = resolve;
+            script.onerror = function () {
+                var fb = document.createElement('script');
+                fb.src = fallbackUrl;
+                fb.async = false;
+                fb.setAttribute('data-clerk-publishable-key', publishableKey);
+                fb.onload = resolve;
+                fb.onerror = function () { reject(new Error('Clerk SDK failed to load from both CDNs')); };
+                document.head.appendChild(fb);
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    function loadScriptWithFallback(primaryUrl, fallbackUrl, label) {
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
             script.src = primaryUrl;
@@ -278,7 +415,7 @@ var Auth = (function () {
                 fb.src = fallbackUrl;
                 fb.async = false;
                 fb.onload = resolve;
-                fb.onerror = function () { reject(new Error('Failed to load UI bundle from both CDNs')); };
+                fb.onerror = function () { reject(new Error((label || 'Script') + ' failed to load from both CDNs')); };
                 document.head.appendChild(fb);
             };
             document.head.appendChild(script);
@@ -304,6 +441,7 @@ var Auth = (function () {
     }
 
     function signOut() {
+        clearCachePrefix(profileSnapshotCachePrefix);
         if (currentUser && currentUser.isTempAdmin) {
             clearTempAdminSession().then(function () {
                 currentUser = null;
@@ -356,12 +494,16 @@ var Auth = (function () {
     }
 
     function showAuthForm(el) {
-        if (!clerkInstance) return;
+        if (!isLoginPage()) {
+            window.location.href = getLoginUrl();
+            return;
+        }
+        if (!clerkInstance || !clerkInstance.openSignIn) return;
         clerkInstance.openSignIn().catch(function () {});
     }
 
     function mountSignIn(containerEl) {
-        if (!clerkInstance) return false;
+        if (!clerkInstance || !clerkInstance.mountSignIn) return false;
         var el = typeof containerEl === 'string' ? document.getElementById(containerEl) : containerEl;
         if (!el) return false;
         clerkInstance.mountSignIn(el);
@@ -377,6 +519,8 @@ var Auth = (function () {
         signOut: signOut,
         signInTempAdmin: signInTempAdmin,
         isTempAdminConfigured: isTempAdminConfigured,
+        getCachedProfile: getCachedProfile,
+        getProfile: getProfile,
         showAuthForm: showAuthForm,
         mountSignIn: mountSignIn
     };

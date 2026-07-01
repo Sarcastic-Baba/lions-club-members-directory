@@ -21,8 +21,8 @@ const upload = multer({
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
 
 // --- Supabase clients ---
 const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -44,7 +44,8 @@ const tempAdminPassword = process.env.TEMP_ADMIN_PASSWORD || '';
 const tempAdminTokenSecret = process.env.TEMP_ADMIN_TOKEN_SECRET || process.env.CLERK_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const tempAdminConfigured = !!(tempAdminId && tempAdminPassword && tempAdminTokenSecret);
 const tempAdminSessionMs = 2 * 60 * 60 * 1000;
-const VALID_MEMBER_ROLES = ['guest', 'member', 'club_admin', 'district_admin'];
+const VALID_MEMBER_ROLES = ['member', 'admin'];
+const LEGACY_ADMIN_ROLES = ['district_admin'];
 const VALID_MEMBER_STATUSES = ['pending', 'active', 'suspended'];
 const protectedPages = [
     '/directory.html',
@@ -105,7 +106,7 @@ function createTempAdminToken() {
         sub: 'temp_admin:' + tempAdminId,
         name: 'Temporary Admin',
         email: tempAdminId,
-        role: 'district_admin',
+        role: 'admin',
         exp: Date.now() + tempAdminSessionMs
     };
     const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -147,7 +148,7 @@ function buildTempAdminMember(payload) {
         club: 'District 321 C1',
         designation: 'Temporary Admin',
         location: 'Admin',
-        role: 'district_admin',
+        role: 'admin',
         status: 'active',
         isTempAdmin: true
     };
@@ -208,13 +209,13 @@ function requireMember(req, res, next) {
     if (req.currentMember.status !== 'active') {
         return res.status(403).json({ error: 'Account not active. Please contact an admin.' });
     }
-    if (req.currentMember.role === 'guest') {
-        return res.status(403).json({ error: 'Lion ID verification required' });
+    if (!isAdminRole(req.currentMember.role) && req.currentMember.role !== 'member') {
+        return res.status(403).json({ error: 'Member approval required' });
     }
     next();
 }
 
-// --- Helper: require admin (club_admin or district_admin) ---
+// --- Helper: require admin ---
 function requireAdmin(req, res, next) {
     if (!req.currentMember) {
         return res.status(401).json({ error: 'Authentication required' });
@@ -222,10 +223,30 @@ function requireAdmin(req, res, next) {
     if (req.currentMember.status !== 'active') {
         return res.status(403).json({ error: 'Account not active. Please contact an admin.' });
     }
-    if (!['club_admin', 'district_admin'].includes(req.currentMember.role)) {
+    if (!isAdminRole(req.currentMember.role)) {
         return res.status(403).json({ error: 'Admin access required' });
     }
     next();
+}
+
+function isAdminRole(role) {
+    return role === 'admin' || LEGACY_ADMIN_ROLES.includes(role);
+}
+
+function normalizeRoleForClient(role) {
+    return isAdminRole(role) ? 'admin' : 'member';
+}
+
+function roleForStorage(role) {
+    return role;
+}
+
+function normalizeMemberRecordForClient(member) {
+    if (!member) return null;
+    return {
+        ...member,
+        role: normalizeRoleForClient(member.role)
+    };
 }
 
 function sanitizeMemberForClient(member) {
@@ -248,7 +269,7 @@ function sanitizeMemberForClient(member) {
         profile_photo_url: member.profile_photo_url,
         show_phone: showPhone,
         show_email: showEmail,
-        role: member.role,
+        role: normalizeRoleForClient(member.role),
         status: member.status,
         relevance: member.relevance
     };
@@ -291,6 +312,124 @@ const DEFAULT_UPCOMING_EVENTS = [
     'Blood Donation Camp',
     'Cabinet Meeting'
 ];
+const SITE_CONFIG_BUCKET = process.env.SITE_CONFIG_BUCKET || 'post-images';
+const SITE_CONFIG_PREFIX = 'site-config';
+const SITE_STATS_CONFIG_PATH = `${SITE_CONFIG_PREFIX}/stats.json`;
+const SITE_EVENTS_CONFIG_PATH = `${SITE_CONFIG_PREFIX}/events.json`;
+const GALLERY_CONFIG_PATH = `${SITE_CONFIG_PREFIX}/gallery.json`;
+
+function isMissingTableError(error, tableName) {
+    if (!error) return false;
+    const message = `${error.message || ''} ${error.details || ''}`;
+    return error.code === '42P01' ||
+        (error.code === 'PGRST205' && message.includes(`'public.${tableName}'`)) ||
+        (error.code === 'PGRST205' && message.includes(tableName));
+}
+
+function isStorageNotFoundError(error) {
+    if (!error) return false;
+    const message = `${error.message || ''} ${error.error || ''}`.toLowerCase();
+    return error.statusCode === '404' ||
+        error.statusCode === 404 ||
+        message.includes('not found') ||
+        message.includes('does not exist');
+}
+
+async function readSiteConfigJson(pathname) {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase.storage
+        .from(SITE_CONFIG_BUCKET)
+        .download(pathname);
+
+    if (error) {
+        if (isStorageNotFoundError(error)) return null;
+        throw error;
+    }
+
+    const text = await data.text();
+    if (!text.trim()) return null;
+    return JSON.parse(text);
+}
+
+async function writeSiteConfigJson(pathname, value) {
+    if (!supabase) throw new Error('Supabase not configured');
+
+    const body = Buffer.from(JSON.stringify(value, null, 2));
+    const { error } = await supabase.storage
+        .from(SITE_CONFIG_BUCKET)
+        .upload(pathname, body, {
+            // The existing project bucket is image-only; the body is still JSON and is read server-side.
+            contentType: 'image/png',
+            upsert: true
+        });
+
+    if (error) throw error;
+    return value;
+}
+
+async function getStoredStatOverrides() {
+    try {
+        const stored = await readSiteConfigJson(SITE_STATS_CONFIG_PATH);
+        if (!stored) return null;
+        return {
+            members: stored.members,
+            clubs: stored.clubs,
+            years: stored.years,
+            updated_at: stored.updated_at || null
+        };
+    } catch (err) {
+        console.warn('[Stats] storage override unavailable:', err.message);
+        return null;
+    }
+}
+
+async function saveStoredStatOverrides(stats, updatedBy) {
+    const payload = {
+        members: stats.members,
+        clubs: stats.clubs,
+        years: stats.years,
+        updated_by: updatedBy || null,
+        updated_at: new Date().toISOString()
+    };
+    await writeSiteConfigJson(SITE_STATS_CONFIG_PATH, payload);
+    return payload;
+}
+
+function normalizeStoredEventsPayload(payload) {
+    if (!payload) return [];
+    const rows = Array.isArray(payload) ? payload : payload.events;
+    return normalizeEventRows(rows || []);
+}
+
+async function getStoredUpcomingEvents() {
+    try {
+        return normalizeStoredEventsPayload(await readSiteConfigJson(SITE_EVENTS_CONFIG_PATH));
+    } catch (err) {
+        console.warn('[Events] storage events unavailable:', err.message);
+        return [];
+    }
+}
+
+async function saveStoredUpcomingEvents(titles, updatedBy) {
+    const now = new Date().toISOString();
+    const events = titles.map((title, index) => ({
+        id: `storage-${index + 1}`,
+        title,
+        display_order: index + 1,
+        is_active: true,
+        updated_by: updatedBy || null,
+        updated_at: now
+    }));
+
+    await writeSiteConfigJson(SITE_EVENTS_CONFIG_PATH, {
+        events,
+        updated_by: updatedBy || null,
+        updated_at: now
+    });
+
+    return normalizeEventRows(events);
+}
 
 async function getComputedStats(req) {
     let membersCount = 0;
@@ -361,6 +500,9 @@ async function getPublicStatOverrides() {
             .maybeSingle();
 
         if (error) {
+            if (isMissingTableError(error, 'site_stats')) {
+                return await getStoredStatOverrides();
+            }
             console.warn('[Stats] site_stats override unavailable:', error.message);
             return null;
         }
@@ -412,6 +554,10 @@ async function getUpcomingEvents(options = {}) {
         if (error) throw error;
         return normalizeEventRows(data);
     } catch (err) {
+        if (isMissingTableError(err, 'site_events')) {
+            const storedEvents = await getStoredUpcomingEvents();
+            if (storedEvents.length > 0 || !fallbackToDefaults) return storedEvents;
+        }
         console.warn('[Events] site_events unavailable:', err.message);
         if (fallbackToDefaults) {
             return DEFAULT_UPCOMING_EVENTS.map((title, index) => ({ id: null, title, display_order: index + 1 }));
@@ -448,31 +594,16 @@ function parseUpcomingEvents(value) {
 
 async function adminCanModeratePost(member, postId) {
     if (!member || !supabase) return false;
-    if (member.role === 'district_admin') return true;
-    if (member.role !== 'club_admin') return false;
-
-    const { data: post } = await supabase
-        .from('posts')
-        .select('author_id')
-        .eq('id', postId)
-        .maybeSingle();
-
-    if (!post || !post.author_id) return false;
-
-    const { data: author } = await supabase
-        .from('members')
-        .select('club')
-        .eq('id', post.author_id)
-        .maybeSingle();
-
-    return !!author && author.club === member.club;
+    return isAdminRole(member.role);
 }
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-app.get(protectedPages, requireSignedIn, (req, res) => {
+// Serve protected page shells so the browser-side Clerk session can load first.
+// The sensitive data/actions remain protected by the API middleware below.
+app.get(protectedPages, (req, res) => {
     res.sendFile(path.join(__dirname, '..', req.path.slice(1)));
 });
 
@@ -496,6 +627,7 @@ if (!process.env.VERCEL) {
 
 // --- Auth config endpoint ---
 app.get('/api/auth/config', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
     res.json({
         clerkConfigured,
         clerkPublishableKey: clerkConfigured ? process.env.CLERK_PUBLISHABLE_KEY : null,
@@ -572,7 +704,7 @@ app.get('/api/members', requireMember, async (req, res) => {
             members = rag.getStaticMembers();
         }
         const visibleMembers = (members || [])
-            .filter(member => member.status === 'active' && member.role !== 'guest')
+            .filter(member => member.status === 'active')
             .map(sanitizeMemberForClient);
         res.json({ members: visibleMembers, total: visibleMembers.length });
     } catch (err) {
@@ -597,10 +729,10 @@ app.post('/api/ai-search', requireMember, async (req, res) => {
                 .order('id', { ascending: true });
             if (error) throw error;
             if (data) {
-                members = data.filter(member => member.status === 'active' && member.role !== 'guest');
+                members = data.filter(member => member.status === 'active');
                 rag.setMembers(members);
                 await rag.ensureEmbeddings(
-                    DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key_here' ? DEEPSEEK_API_KEY : null
+                    OPENROUTER_API_KEY && OPENROUTER_API_KEY !== 'your_openrouter_api_key_here' ? OPENROUTER_API_KEY : null
                 );
             }
         }
@@ -629,7 +761,7 @@ Address: ${m.address}${m.year_of_joining ? '\nYear of Joining: ' + m.year_of_joi
         let aiResponse = '';
         let llmUsed = false;
 
-        if (DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key_here') {
+        if (OPENROUTER_API_KEY && OPENROUTER_API_KEY !== 'your_openrouter_api_key_here') {
             try {
                 const systemPrompt = `You are an assistant for Lions Club District 321 C1, helping members find other Lions members who can help with specific needs. 
 
@@ -643,14 +775,16 @@ Rules:
 - If the query is about a specific skill or profession (e.g., "I need a doctor"), prioritize members with matching professions.
 - If the query is about a location, prioritize members from that area.`;
 
-                const llmResp = await fetch('https://api.deepseek.com/chat/completions', {
+                const llmResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'HTTP-Referer': req.get('origin') || 'https://lions-club-directory.vercel.app',
+                        'X-Title': 'Lions Club District 321 C1 Directory'
                     },
                     body: JSON.stringify({
-                        model: DEEPSEEK_MODEL,
+                        model: OPENROUTER_MODEL,
                         messages: [
                             { role: 'system', content: systemPrompt },
                             { role: 'user', content: `QUERY: ${query}\n\nRELEVANT MEMBERS FROM DIRECTORY:\n${context}` }
@@ -666,7 +800,7 @@ Rules:
                     llmUsed = true;
                 }
             } catch (e) {
-                console.warn('[LLM] DeepSeek call failed:', e.message);
+                console.warn('[LLM] OpenRouter call failed:', e.message);
             }
         }
 
@@ -680,13 +814,15 @@ Rules:
 
     } catch (err) {
         console.error('[API] Error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        try { require('fs').appendFileSync(require('path').join(__dirname, '..', 'error.log'), new Date().toISOString() + ' | ' + (err.stack || err.message || String(err)) + '\n'); } catch (_) {}
+        res.status(500).json({ error: 'Internal server error', detail: err.message || String(err) });
     }
 });
 
 // --- Profile API ---
 app.get('/api/profile', async (req, res) => {
     try {
+        res.set('Cache-Control', 'private, no-store');
         if (!req.currentUserId) return res.status(401).json({ error: 'Authentication required' });
         if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
         if (req.currentMember && req.currentMember.isTempAdmin) {
@@ -700,7 +836,7 @@ app.get('/api/profile', async (req, res) => {
             .maybeSingle();
 
         if (error) throw error;
-        res.json({ profile: data || null });
+        res.json({ profile: normalizeMemberRecordForClient(data) });
     } catch (err) {
         console.error('[Profile] GET error:', err.message);
         res.status(500).json({ error: 'Failed to fetch profile' });
@@ -751,7 +887,7 @@ app.put('/api/profile', async (req, res) => {
                     specialty, club, designation, location,
                     year_of_joining: year_of_joining ? parseInt(year_of_joining) : null,
                     profile_photo_url: profile_photo_url || null,
-                    role: 'guest',
+                    role: 'member',
                     status: 'pending'
                 }])
                 .select()
@@ -759,7 +895,7 @@ app.put('/api/profile', async (req, res) => {
         }
 
         if (error) throw error;
-        res.json({ profile: data });
+        res.json({ profile: normalizeMemberRecordForClient(data) });
     } catch (err) {
         console.error('[Profile] PUT error:', err.message);
         res.status(500).json({ error: 'Failed to save profile' });
@@ -1017,23 +1153,12 @@ app.delete('/api/posts/:postId', requireMember, async (req, res) => {
         if (!post) return res.status(404).json({ error: 'Post not found' });
 
         const isAuthor = post.author_id === member.id;
-        const isAdmin = member.role === 'district_admin';
-        const isClubAdmin = member.role === 'club_admin';
+        const isAdmin = isAdminRole(member.role);
 
-        if (!isAuthor && !isAdmin && !isClubAdmin) {
+        if (!isAuthor && !isAdmin) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        if (isClubAdmin && !isAdmin && !isAuthor) {
-            const { data: author } = await supabase
-                .from('members')
-                .select('club')
-                .eq('id', post.author_id)
-                .maybeSingle();
-            if (!author || author.club !== member.club) {
-                return res.status(403).json({ error: 'Not authorized — different club' });
-            }
-        }
 
         const { error } = await supabase
             .from('posts')
@@ -1223,23 +1348,12 @@ app.delete('/api/posts/:postId/comments/:commentId', requireMember, async (req, 
         if (!comment) return res.status(404).json({ error: 'Comment not found' });
 
         const isAuthor = comment.author_id === member.id;
-        const isAdmin = member.role === 'district_admin';
-        const isClubAdmin = member.role === 'club_admin';
+        const isAdmin = isAdminRole(member.role);
 
-        if (!isAuthor && !isAdmin && !isClubAdmin) {
+        if (!isAuthor && !isAdmin) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        if (isClubAdmin && !isAdmin && !isAuthor) {
-            const { data: author } = await supabase
-                .from('members')
-                .select('club')
-                .eq('id', comment.author_id)
-                .maybeSingle();
-            if (!author || author.club !== member.club) {
-                return res.status(403).json({ error: 'Not authorized — different club' });
-            }
-        }
 
         const { error } = await supabase
             .from('post_comments')
@@ -1363,6 +1477,7 @@ app.get('/api/stats', async (req, res) => {
 // Public upcoming events for right panels
 app.get('/api/events', async (req, res) => {
     try {
+        res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         const events = await getUpcomingEvents({ fallbackToDefaults: true });
         res.json({ events });
     } catch (err) {
@@ -1425,7 +1540,21 @@ app.put('/api/admin/stats', requireAdmin, async (req, res) => {
             .select('members, clubs, years, updated_at')
             .single();
 
-        if (error) throw error;
+        if (error) {
+            if (isMissingTableError(error, 'site_stats')) {
+                const stored = await saveStoredStatOverrides({ members, clubs, years }, req.currentMember.id || null);
+                return res.json({
+                    stats: {
+                        members: stored.members,
+                        clubs: stored.clubs,
+                        years: stored.years,
+                        updated_at: stored.updated_at
+                    },
+                    storageBacked: true
+                });
+            }
+            throw error;
+        }
 
         res.json({ stats: data });
     } catch (err) {
@@ -1465,9 +1594,18 @@ app.put('/api/admin/events', requireAdmin, async (req, res) => {
             .delete()
             .neq('id', 0);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+            if (isMissingTableError(deleteError, 'site_events')) {
+                const storedEvents = await saveStoredUpcomingEvents(events, updatedBy);
+                return res.json({ events: storedEvents, storageBacked: true });
+            }
+            throw deleteError;
+        }
 
         if (events.length === 0) {
+            await saveStoredUpcomingEvents([], updatedBy).catch((err) => {
+                console.warn('[Events] storage fallback clear failed:', err.message);
+            });
             return res.json({ events: [] });
         }
 
@@ -1486,7 +1624,13 @@ app.put('/api/admin/events', requireAdmin, async (req, res) => {
             .order('display_order', { ascending: true })
             .order('id', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            if (isMissingTableError(error, 'site_events')) {
+                const storedEvents = await saveStoredUpcomingEvents(events, updatedBy);
+                return res.json({ events: storedEvents, storageBacked: true });
+            }
+            throw error;
+        }
 
         res.json({ events: normalizeEventRows(data) });
     } catch (err) {
@@ -1504,15 +1648,29 @@ app.get('/api/admin/members', requireAdmin, async (req, res) => {
     try {
         if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
 
-        const { data: members, error } = await supabase
+        const status = req.query.status;
+        if (status) validateMemberStatus(status);
+
+        let query = supabase
             .from('members')
             .select('*')
             .order('id', { ascending: true });
 
+        if (status) query = query.eq('status', status);
+
+        const { data: members, error } = await query;
         if (error) throw error;
 
-        res.json({ members: members || [] });
+        res.json({
+            members: (members || []).map(member => ({
+                ...member,
+                role: normalizeRoleForClient(member.role)
+            }))
+        });
     } catch (err) {
+        if (err.statusCode === 400) {
+            return res.status(400).json({ error: err.message });
+        }
         console.error('[Admin] Members fetch error:', err.message);
         res.status(500).json({ error: 'Failed to fetch members' });
     }
@@ -1529,7 +1687,7 @@ app.put('/api/admin/members/:id', requireAdmin, async (req, res) => {
         const updates = {};
         if (role) {
             validateMemberRole(role);
-            updates.role = role;
+            updates.role = roleForStorage(role);
         }
         if (status) {
             validateMemberStatus(status);
@@ -1540,21 +1698,74 @@ app.put('/api/admin/members/:id', requireAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Nothing to update' });
         }
 
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('members')
             .update(updates)
             .eq('id', id)
             .select()
             .single();
 
+        if (error && role === 'admin') {
+            const legacyUpdates = { ...updates, role: 'district_admin' };
+            ({ data, error } = await supabase
+                .from('members')
+                .update(legacyUpdates)
+                .eq('id', id)
+                .select()
+                .single());
+        }
+
         if (error) throw error;
-        res.json({ member: data });
+        res.json({
+            member: {
+                ...data,
+                role: normalizeRoleForClient(data.role)
+            }
+        });
     } catch (err) {
         if (err.statusCode === 400) {
             return res.status(400).json({ error: err.message });
         }
         console.error('[Admin] Update member error:', err.message);
         res.status(500).json({ error: 'Failed to update member' });
+    }
+});
+
+// --- Delete a member profile (admin only) ---
+app.delete('/api/admin/members/:id', requireAdmin, async (req, res) => {
+    try {
+        if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
+
+        const { id } = req.params;
+        if (String(req.currentMember.id) === String(id)) {
+            return res.status(400).json({ error: 'Admins cannot delete their own profile' });
+        }
+
+        const { data: member, error: fetchError } = await supabase
+            .from('members')
+            .select('id, name, email, role, status')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!member) return res.status(404).json({ error: 'Member not found' });
+
+        const { error } = await supabase
+            .from('members')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({
+            success: true,
+            member: {
+                ...member,
+                role: normalizeRoleForClient(member.role)
+            }
+        });
+    } catch (err) {
+        console.error('[Admin] Delete member error:', err.message);
+        res.status(500).json({ error: 'Failed to delete member' });
     }
 });
 
@@ -1630,7 +1841,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
             };
         });
 
-        let result = (reports || []).map(r => ({
+        const result = (reports || []).map(r => ({
             id: r.id,
             reason: r.reason,
             reviewed: !!r.reviewed,
@@ -1639,15 +1850,6 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
             reporter: reporterMap[r.reporter_id] || null,
             post: postMap[r.post_id] || null
         }));
-
-        if (req.currentMember.role === 'club_admin') {
-            result = result.filter(r => (
-                r.post &&
-                r.post.author &&
-                r.post.author.club &&
-                r.post.author.club === req.currentMember.club
-            ));
-        }
 
         res.json({ reports: result });
     } catch (err) {
@@ -1705,55 +1907,251 @@ app.delete('/api/admin/reports/:id', requireAdmin, async (req, res) => {
 // GALLERY API
 // ====================================================================
 
-// --- Get gallery images (from posts with images) ---
+function normalizeGalleryImage(row) {
+    if (!row) return null;
+    return {
+        id: row.id,
+        url: row.image_url || row.url,
+        caption: row.caption || null,
+        storage_path: row.storage_path || null,
+        createdAt: row.created_at || null
+    };
+}
+
+function isMissingGalleryTableError(error) {
+    return isMissingTableError(error, 'gallery_images');
+}
+
+async function getStoredGalleryImages() {
+    try {
+        const payload = await readSiteConfigJson(GALLERY_CONFIG_PATH);
+        const rows = payload && Array.isArray(payload.images) ? payload.images : [];
+        return rows.map(normalizeGalleryImage).filter(Boolean);
+    } catch (err) {
+        console.warn('[Gallery] storage index unavailable:', err.message);
+        return [];
+    }
+}
+
+async function saveStoredGalleryImages(images) {
+    const payload = {
+        images: (images || []).map((image, index) => ({
+            id: image.id,
+            image_url: image.image_url || image.url,
+            storage_path: image.storage_path || null,
+            caption: image.caption || null,
+            display_order: image.display_order != null ? image.display_order : index + 1,
+            created_by: image.created_by || null,
+            created_at: image.created_at || image.createdAt || new Date().toISOString()
+        })),
+        updated_at: new Date().toISOString()
+    };
+    await writeSiteConfigJson(GALLERY_CONFIG_PATH, payload);
+    return payload.images.map(normalizeGalleryImage).filter(Boolean);
+}
+
+async function addStoredGalleryImage(imageUrl, storagePath, caption, createdBy) {
+    const images = await getStoredGalleryImages();
+    const row = {
+        id: `storage-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        image_url: imageUrl,
+        storage_path: storagePath,
+        caption: caption || null,
+        display_order: 0,
+        created_by: createdBy || null,
+        created_at: new Date().toISOString()
+    };
+
+    await saveStoredGalleryImages([row].concat(images));
+    return normalizeGalleryImage(row);
+}
+
+async function deleteStoredGalleryImage(id) {
+    const images = await getStoredGalleryImages();
+    const target = images.find((image) => image.id === id);
+    if (!target) return null;
+    await saveStoredGalleryImages(images.filter((image) => image.id !== id));
+    return target;
+}
+
+function storagePathFromPublicUrl(publicUrl) {
+    try {
+        const parsed = new URL(publicUrl);
+        const objectMarker = '/object/public/post-images/';
+        const renderMarker = '/render/image/public/post-images/';
+        const pathname = decodeURIComponent(parsed.pathname);
+        const objectIndex = pathname.indexOf(objectMarker);
+        if (objectIndex !== -1) return pathname.slice(objectIndex + objectMarker.length);
+        const renderIndex = pathname.indexOf(renderMarker);
+        if (renderIndex !== -1) return pathname.slice(renderIndex + renderMarker.length).split('?')[0];
+    } catch (err) {}
+    return null;
+}
+
+// --- Get gallery images (admin-managed only) ---
 app.get('/api/gallery', requireMember, async (req, res) => {
     try {
-        const images = [];
+        if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
 
-        if (supabase) {
-            const { data: posts, error } = await supabase
-                .from('posts')
-                .select('id, author_id, body, image_urls, created_at')
-                .in('status', ['active', 'under_review'])
-                .not('image_urls', 'is', null)
-                .order('created_at', { ascending: false })
-                .limit(60);
+        const { data, error } = await supabase
+            .from('gallery_images')
+            .select('id, image_url, caption, display_order, created_at')
+            .order('display_order', { ascending: true })
+            .order('created_at', { ascending: false })
+            .limit(120);
 
-            if (error) throw error;
-
-            const authorIds = [...new Set((posts || []).map(p => p.author_id).filter(Boolean))];
-
-            let authorMap = {};
-            if (authorIds.length) {
-                const { data: authors } = await supabase
-                    .from('members')
-                    .select('id, name')
-                    .in('id', authorIds);
-                (authors || []).forEach(a => { authorMap[a.id] = a; });
+        if (error) {
+            if (isMissingGalleryTableError(error)) {
+                return res.json({
+                    images: await getStoredGalleryImages(),
+                    storageBacked: true
+                });
             }
-
-            for (const post of (posts || [])) {
-                const urls = post.image_urls;
-                if (!urls || !urls.length) continue;
-                const authorName = authorMap[post.author_id]?.name || 'Lions Member';
-                for (const url of urls) {
-                    if (url) {
-                        images.push({
-                            url: url,
-                            caption: post.body || null,
-                            author: authorName,
-                            postId: post.id,
-                            createdAt: post.created_at
-                        });
-                    }
-                }
-            }
+            throw error;
         }
 
-        res.json({ images });
+        res.json({
+            images: (data || []).map(normalizeGalleryImage).filter(Boolean),
+            schemaReady: true
+        });
     } catch (err) {
         console.error('[Gallery] Error:', err.message);
         res.status(500).json({ error: 'Failed to load gallery' });
+    }
+});
+
+// --- Add a gallery image (admin only) ---
+app.post('/api/admin/gallery', upload.single('image'), requireAdmin, async (req, res) => {
+    try {
+        if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
+        if (!req.file) return res.status(400).json({ error: 'Image file required' });
+
+        const caption = String(req.body.caption || '').trim();
+        if (caption.length > 180) {
+            return res.status(400).json({ error: 'Caption must be 180 characters or less' });
+        }
+
+        const ext = req.file.mimetype === 'image/png' ? 'png'
+            : req.file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+        const ownerId = req.currentMember.id || 'admin';
+        const filename = `${ownerId}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
+        const storagePath = `gallery/${filename}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('post-images')
+            .upload(storagePath, req.file.buffer, {
+                contentType: req.file.mimetype,
+                upsert: false
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('post-images')
+            .getPublicUrl(storagePath);
+
+        const { data, error } = await supabase
+            .from('gallery_images')
+            .insert([{
+                image_url: urlData.publicUrl,
+                storage_path: storagePath,
+                caption: caption || null,
+                created_by: req.currentMember.id || null
+            }])
+            .select('id, image_url, caption, display_order, created_at')
+            .single();
+
+        if (error) {
+            if (isMissingGalleryTableError(error)) {
+                const image = await addStoredGalleryImage(
+                    urlData.publicUrl,
+                    storagePath,
+                    caption,
+                    req.currentMember.id || null
+                );
+                return res.status(201).json({ image, storageBacked: true });
+            }
+            await supabase.storage.from('post-images').remove([storagePath]).catch(() => {});
+            throw error;
+        }
+
+        res.status(201).json({ image: normalizeGalleryImage(data) });
+    } catch (err) {
+        console.error('[Gallery] Upload error:', err.message);
+        res.status(500).json({ error: 'Failed to add gallery image: ' + err.message });
+    }
+});
+
+// --- Delete a gallery image (admin only) ---
+app.delete('/api/admin/gallery/:id', requireAdmin, async (req, res) => {
+    try {
+        if (!supabase) return res.status(501).json({ error: 'Supabase not configured' });
+
+        if (String(req.params.id).startsWith('storage-')) {
+            const storedImage = await deleteStoredGalleryImage(req.params.id);
+            if (!storedImage) return res.status(404).json({ error: 'Gallery image not found' });
+
+            const storedPath = storedImage.storage_path || storagePathFromPublicUrl(storedImage.url);
+            if (storedPath) {
+                const { error: removeError } = await supabase.storage
+                    .from('post-images')
+                    .remove([storedPath]);
+                if (removeError) {
+                    console.warn('[Gallery] Storage cleanup failed:', removeError.message);
+                }
+            }
+
+            return res.json({ success: true, storageBacked: true });
+        }
+
+        const { data: image, error: fetchError } = await supabase
+            .from('gallery_images')
+            .select('id, image_url, storage_path')
+            .eq('id', req.params.id)
+            .maybeSingle();
+
+        if (fetchError) {
+            if (isMissingGalleryTableError(fetchError)) {
+                const storedImage = await deleteStoredGalleryImage(req.params.id);
+                if (!storedImage) return res.status(404).json({ error: 'Gallery image not found' });
+
+                const storedPath = storedImage.storage_path || storagePathFromPublicUrl(storedImage.url);
+                if (storedPath) {
+                    const { error: removeError } = await supabase.storage
+                        .from('post-images')
+                        .remove([storedPath]);
+                    if (removeError) {
+                        console.warn('[Gallery] Storage cleanup failed:', removeError.message);
+                    }
+                }
+
+                return res.json({ success: true, storageBacked: true });
+            }
+            throw fetchError;
+        }
+        if (!image) return res.status(404).json({ error: 'Gallery image not found' });
+
+        const { error } = await supabase
+            .from('gallery_images')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+
+        const storagePath = image.storage_path || storagePathFromPublicUrl(image.image_url);
+        if (storagePath) {
+            const { error: removeError } = await supabase.storage
+                .from('post-images')
+                .remove([storagePath]);
+            if (removeError) {
+                console.warn('[Gallery] Storage cleanup failed:', removeError.message);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Gallery] Delete error:', err.message);
+        res.status(500).json({ error: 'Failed to delete gallery image' });
     }
 });
 
@@ -1766,7 +2164,7 @@ app.get('/api/health', (req, res) => {
         status: 'ok',
         members: rag.members.length,
         embeddings: true,
-        llmConfigured: DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key_here',
+        llmConfigured: OPENROUTER_API_KEY && OPENROUTER_API_KEY !== 'your_openrouter_api_key_here',
         supabaseConfigured,
         clerkConfigured
     });
@@ -1799,10 +2197,12 @@ async function start() {
 
     rag.setMembers(members);
 
-    console.log('[Server] Building embeddings...');
-    await rag.buildEmbeddings(
-        DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key_here' ? DEEPSEEK_API_KEY : null
-    );
+    console.log('[Server] Preparing embeddings in the background...');
+    rag.buildEmbeddings(
+        OPENROUTER_API_KEY && OPENROUTER_API_KEY !== 'your_openrouter_api_key_here' ? OPENROUTER_API_KEY : null
+    ).catch((e) => {
+        console.warn('[Server] Embedding build failed:', e.message);
+    });
 
     if (process.env.VERCEL) {
         console.log('[Server] Running on Vercel — serverless mode');
@@ -1811,7 +2211,7 @@ async function start() {
             console.log(`[Server] Lions Club 321 C1 Directory running at http://localhost:${PORT}`);
             console.log(`[Server] Supabase: ${supabaseConfigured ? 'Yes' : 'No'}`);
             console.log(`[Server] Clerk: ${clerkConfigured ? 'Yes' : 'No'}`);
-            console.log(`[Server] LLM: ${DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key_here' ? 'Yes' : 'No'}`);
+            console.log(`[Server] LLM: ${OPENROUTER_API_KEY && OPENROUTER_API_KEY !== 'your_openrouter_api_key_here' ? 'Yes' : 'No'}`);
         });
     }
 }

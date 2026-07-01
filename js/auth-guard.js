@@ -1,6 +1,8 @@
 (function () {
     'use strict';
 
+    document.documentElement.classList.remove('auth-guard-pending');
+
     function currentPage() {
         return window.location.pathname.replace(/^\//, '') + window.location.search + window.location.hash;
     }
@@ -17,7 +19,6 @@
     Auth.init()
         .then(function () {
             if (Auth.getUser()) {
-                document.documentElement.classList.remove('auth-guard-pending');
                 return;
             }
             redirectToLogin();

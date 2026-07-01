@@ -3,6 +3,8 @@ var Admin = (function () {
 
     var elLoading = document.getElementById('adminLoading');
     var elError = document.getElementById('adminError');
+    var elApprovalsBody = document.getElementById('approvalsTableBody');
+    var elApprovalsEmpty = document.getElementById('approvalsEmpty');
     var elMembersBody = document.getElementById('membersTableBody');
     var elMembersEmpty = document.getElementById('membersEmpty');
     var elReportsContainer = document.getElementById('reportsContainer');
@@ -41,8 +43,9 @@ var Admin = (function () {
 
     function loadActiveTab() {
         var activeTab = document.querySelector('.admin-tab.active');
-        var target = activeTab ? activeTab.getAttribute('data-tab') : 'members';
-        if (target === 'stats') loadStats();
+        var target = activeTab ? activeTab.getAttribute('data-tab') : 'approvals';
+        if (target === 'approvals') loadApprovals();
+        else if (target === 'stats') loadStats();
         else if (target === 'reports') loadReports();
         else loadMembers();
     }
@@ -57,7 +60,8 @@ var Admin = (function () {
                 document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
                 var panel = document.getElementById('tab-' + target);
                 if (panel) panel.classList.add('active');
-                if (target === 'members') loadMembers();
+                if (target === 'approvals') loadApprovals();
+                else if (target === 'members') loadMembers();
                 else if (target === 'stats') loadStats();
                 else if (target === 'reports') loadReports();
             });
@@ -82,6 +86,52 @@ var Admin = (function () {
                 addEventRow('');
             });
         }
+    }
+
+    function loadApprovals() {
+        showLoading();
+        if (elApprovalsBody) elApprovalsBody.innerHTML = '';
+        if (elApprovalsEmpty) elApprovalsEmpty.classList.add('hidden');
+
+        getAuthHeaders().then(function (headers) {
+            return fetch('/api/admin/members?status=pending', { headers: headers });
+        }).then(function (r) {
+            if (!r.ok) throw new Error('Failed to load pending approvals');
+            return r.json();
+        }).then(function (data) {
+            hideLoading();
+            var members = data.members || [];
+            if (members.length === 0) {
+                if (elApprovalsEmpty) elApprovalsEmpty.classList.remove('hidden');
+                return;
+            }
+            renderApprovals(members);
+        }).catch(function (err) {
+            console.error('Load approvals error:', err);
+            showError('Could not load pending approvals.');
+        });
+    }
+
+    function renderApprovals(members) {
+        if (!elApprovalsBody) return;
+
+        var html = '';
+        members.forEach(function (m) {
+            html += '<tr>' +
+                '<td><strong>' + escapeHtml(m.name || 'Unknown') + '</strong></td>' +
+                '<td>' + escapeHtml(m.email || '-') + '</td>' +
+                '<td>' + escapeHtml(m.club || '-') + '</td>' +
+                '<td>' + escapeHtml(m.designation || '-') + '</td>' +
+                '<td><div class="admin-actions">' +
+                    '<button type="button" class="btn-admin-sm approve-member-btn" data-member-id="' + m.id + '">Approve</button>' +
+                    '<button type="button" class="btn-admin-sm suspend-member-btn" data-member-id="' + m.id + '">Reject</button>' +
+                    '<button type="button" class="btn-admin-sm danger delete-member-btn" data-member-id="' + m.id + '" data-member-name="' + escapeHtml(m.name || 'this member') + '">Delete Profile</button>' +
+                '</div></td>' +
+            '</tr>';
+        });
+
+        elApprovalsBody.innerHTML = html;
+        bindMemberActionButtons(elApprovalsBody);
     }
 
     function loadMembers() {
@@ -113,7 +163,7 @@ var Admin = (function () {
             var name = m.name || 'Unknown';
             var email = m.email || '-';
             var club = m.club || '-';
-            var role = m.role || 'member';
+            var role = m.role === 'admin' ? 'admin' : 'member';
             var status = m.status || 'active';
             var statusClass = getStatusClass(status);
             html += '<tr>' +
@@ -121,17 +171,18 @@ var Admin = (function () {
                 '<td>' + escapeHtml(email) + '</td>' +
                 '<td>' + escapeHtml(club) + '</td>' +
                 '<td><select class="role-select" data-member-id="' + m.id + '" data-current-role="' + escapeHtml(role) + '">' +
-                    '<option value="guest"' + (role === 'guest' ? ' selected' : '') + '>Guest</option>' +
                     '<option value="member"' + (role === 'member' ? ' selected' : '') + '>Member</option>' +
-                    '<option value="club_admin"' + (role === 'club_admin' ? ' selected' : '') + '>Club Admin</option>' +
-                    '<option value="district_admin"' + (role === 'district_admin' ? ' selected' : '') + '>District Admin</option>' +
+                    '<option value="admin"' + (role === 'admin' ? ' selected' : '') + '>Admin</option>' +
                 '</select></td>' +
                 '<td><select class="status-select status-badge ' + statusClass + '" data-member-id="' + m.id + '" data-current-status="' + escapeHtml(status) + '">' +
                     '<option value="pending"' + (status === 'pending' ? ' selected' : '') + '>Pending</option>' +
                     '<option value="active"' + (status === 'active' ? ' selected' : '') + '>Active</option>' +
                     '<option value="suspended"' + (status === 'suspended' ? ' selected' : '') + '>Suspended</option>' +
                 '</select></td>' +
-                '<td><div class="admin-actions"></div></td>' +
+                '<td><div class="admin-actions">' +
+                    (status === 'pending' ? '<button type="button" class="btn-admin-sm approve-member-btn" data-member-id="' + m.id + '">Approve</button>' : '') +
+                    '<button type="button" class="btn-admin-sm danger delete-member-btn" data-member-id="' + m.id + '" data-member-name="' + escapeHtml(name) + '">Delete Profile</button>' +
+                '</div></td>' +
             '</tr>';
         });
         elMembersBody.innerHTML = html;
@@ -157,6 +208,7 @@ var Admin = (function () {
                 updateMemberStatus(memberId, newStatus, this);
             });
         });
+        bindMemberActionButtons(elMembersBody);
     }
 
     function updateRole(memberId, role, selectEl) {
@@ -193,6 +245,89 @@ var Admin = (function () {
         }).catch(function (err) {
             alert('Failed: ' + err.message);
             if (selectEl) selectEl.value = selectEl.getAttribute('data-current-status');
+        });
+    }
+
+    function bindMemberActionButtons(root) {
+        if (!root) return;
+
+        root.querySelectorAll('.approve-member-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                approveMember(this.getAttribute('data-member-id'), this);
+            });
+        });
+
+        root.querySelectorAll('.suspend-member-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                suspendMember(this.getAttribute('data-member-id'), this);
+            });
+        });
+
+        root.querySelectorAll('.delete-member-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                deleteMember(
+                    this.getAttribute('data-member-id'),
+                    this.getAttribute('data-member-name') || 'this member',
+                    this
+                );
+            });
+        });
+    }
+
+    function approveMember(memberId, btnEl) {
+        if (!confirm('Approve this member profile?')) return;
+        updateMember(memberId, { role: 'member', status: 'active' }, btnEl, 'Approval failed');
+    }
+
+    function suspendMember(memberId, btnEl) {
+        if (!confirm('Reject this member profile? The profile will be marked suspended.')) return;
+        updateMember(memberId, { role: 'member', status: 'suspended' }, btnEl, 'Rejection failed');
+    }
+
+    function updateMember(memberId, payload, btnEl, failureLabel) {
+        setRowButtonsDisabled(btnEl, true);
+        getAuthHeaders().then(function (headers) {
+            return fetch('/api/admin/members/' + memberId, {
+                method: 'PUT',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+        }).then(function (r) {
+            if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Update failed'); });
+            return r.json();
+        }).then(function () {
+            loadActiveTab();
+        }).catch(function (err) {
+            alert((failureLabel || 'Update failed') + ': ' + err.message);
+            setRowButtonsDisabled(btnEl, false);
+        });
+    }
+
+    function deleteMember(memberId, memberName, btnEl) {
+        if (!confirm('Delete the profile for ' + memberName + '? This cannot be undone.')) return;
+        setRowButtonsDisabled(btnEl, true);
+        getAuthHeaders().then(function (headers) {
+            return fetch('/api/admin/members/' + memberId, {
+                method: 'DELETE',
+                headers: headers
+            });
+        }).then(function (r) {
+            if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Delete failed'); });
+            return r.json();
+        }).then(function () {
+            loadActiveTab();
+        }).catch(function (err) {
+            alert('Delete failed: ' + err.message);
+            setRowButtonsDisabled(btnEl, false);
+        });
+    }
+
+    function setRowButtonsDisabled(btnEl, disabled) {
+        if (!btnEl) return;
+        var row = btnEl.closest('tr');
+        if (!row) return;
+        row.querySelectorAll('button, select').forEach(function (control) {
+            control.disabled = disabled;
         });
     }
 
@@ -350,7 +485,9 @@ var Admin = (function () {
         }).then(function (data) {
             renderEventsEditor(data.events || []);
             setEventsStatus('Saved.');
-            if (window.RightPanel && typeof window.RightPanel.refresh === 'function') {
+            if (window.RightPanel && typeof window.RightPanel.setCachedEvents === 'function') {
+                window.RightPanel.setCachedEvents(data.events || []);
+            } else if (window.RightPanel && typeof window.RightPanel.refresh === 'function') {
                 window.RightPanel.refresh();
             }
         }).catch(function (err) {

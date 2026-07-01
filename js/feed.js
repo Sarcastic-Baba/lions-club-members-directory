@@ -56,18 +56,24 @@ var Feed = (function () {
 
     // ==================== INIT ====================
     function initFeed() {
-        getAuthHeaders().then(function (headers) {
-            return fetch('/api/profile', { headers: headers });
-        }).then(function (r) {
-            if (!r.ok) throw new Error('Not authorized');
-            return r.json();
-        }).then(function (data) {
-            if (!data.profile) {
+        var profilePromise = Auth.getProfile
+            ? Auth.getProfile()
+            : getAuthHeaders().then(function (headers) {
+                return fetch('/api/profile', { headers: headers });
+            }).then(function (r) {
+                if (!r.ok) throw new Error('Not authorized');
+                return r.json();
+            }).then(function (data) {
+                return data.profile || null;
+            });
+
+        profilePromise.then(function (profile) {
+            if (!profile) {
                 showVerificationRequired();
                 return;
             }
-            currentMember = data.profile;
-            if (currentMember.role === 'guest') {
+            currentMember = profile;
+            if (currentMember.status !== 'active') {
                 showVerificationRequired();
                 return;
             }
@@ -397,6 +403,13 @@ var Feed = (function () {
         '</div>';
     }
 
+    function getRenderUrl(originalUrl, width) {
+        if (!originalUrl) return originalUrl;
+        // Convert /object/public/ to /render/image/public/ and append transformation params
+        return originalUrl.replace('/object/public/', '/render/image/public/') +
+            '?width=' + width + '&resize=cover&quality=85';
+    }
+
     function buildContentHTML(body, images, contentType) {
         var html = '';
 
@@ -405,10 +418,11 @@ var Feed = (function () {
         }
 
         if (images && images.length > 0) {
+            var feedWidth = 700;
             html += '<div class="post-images post-images-' + images.length + '">';
             images.forEach(function (url) {
                 html += '<div class="post-image-wrapper">' +
-                    '<img src="' + escapeHtml(url) + '" alt="Post image" class="post-image" loading="lazy">' +
+                    '<img src="' + escapeHtml(getRenderUrl(url, feedWidth)) + '" data-full="' + escapeHtml(url) + '" alt="Post image" class="post-image" loading="lazy">' +
                 '</div>';
             });
             html += '</div>';
@@ -453,7 +467,7 @@ var Feed = (function () {
         var imgs = card.querySelectorAll('.post-image');
         imgs.forEach(function (img) {
             img.addEventListener('click', function () {
-                openLightbox(this.src);
+                openLightbox(this.getAttribute('data-full') || this.src);
             });
         });
 
@@ -504,7 +518,7 @@ var Feed = (function () {
         menu.className = 'post-context-menu';
 
         var isOwn = currentMember && post.author && currentMember.id === post.author.id;
-        var isAdmin = currentMember && (currentMember.role === 'district_admin' || currentMember.role === 'club_admin');
+        var isAdmin = currentMember && currentMember.role === 'admin';
 
         var items = [];
         if (isOwn) {
@@ -768,7 +782,7 @@ var Feed = (function () {
             : '<div class="comment-author-avatar">' + initials + '</div>';
 
         var isOwn = currentMember && currentMember.id === comment.author_id;
-        var isAdmin = currentMember && (currentMember.role === 'district_admin' || currentMember.role === 'club_admin');
+        var isAdmin = currentMember && currentMember.role === 'admin';
 
         el.innerHTML = photoHTML +
             '<div class="comment-content">' +

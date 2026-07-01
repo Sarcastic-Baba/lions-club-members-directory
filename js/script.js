@@ -273,21 +273,19 @@
         }
 
         membersPagination.classList.remove('hidden');
-        membersPagination.appendChild(buildPageButton('Previous', currentDirectoryPage - 1, currentDirectoryPage === 1, 'pagination-prev'));
 
-        var pages = getVisiblePageNumbers(totalPages);
-        for (var i = 0; i < pages.length; i++) {
-            if (typeof pages[i] === 'string') {
-                var ellipsis = document.createElement('span');
-                ellipsis.className = 'pagination-ellipsis';
-                ellipsis.textContent = '...';
-                membersPagination.appendChild(ellipsis);
-            } else {
-                membersPagination.appendChild(buildPageButton(String(pages[i]), pages[i], false, pages[i] === currentDirectoryPage ? 'active' : ''));
-            }
-        }
+        membersPagination.appendChild(buildPageButton('|<', 1, currentDirectoryPage === 1, 'pagination-first'));
 
-        membersPagination.appendChild(buildPageButton('Next', currentDirectoryPage + 1, currentDirectoryPage === totalPages, 'pagination-next'));
+        membersPagination.appendChild(buildPageButton('<', currentDirectoryPage - 1, currentDirectoryPage === 1, 'pagination-prev'));
+
+        var pageIndicator = document.createElement('span');
+        pageIndicator.className = 'pagination-current';
+        pageIndicator.textContent = 'Page ' + currentDirectoryPage + ' of ' + totalPages;
+        membersPagination.appendChild(pageIndicator);
+
+        membersPagination.appendChild(buildPageButton('>', currentDirectoryPage + 1, currentDirectoryPage === totalPages, 'pagination-next'));
+
+        membersPagination.appendChild(buildPageButton('>|', totalPages, currentDirectoryPage === totalPages, 'pagination-last'));
     }
 
     function buildPageButton(label, page, disabled, extraClass) {
@@ -296,7 +294,14 @@
         button.className = 'pagination-btn' + (extraClass ? ' ' + extraClass : '');
         button.textContent = label;
         button.disabled = !!disabled;
-        button.setAttribute('aria-label', label === 'Previous' || label === 'Next' ? label + ' page' : 'Page ' + label);
+
+        var ariaLabel = 'Page ' + label;
+        if (extraClass === 'pagination-first') ariaLabel = 'First page';
+        else if (extraClass === 'pagination-prev') ariaLabel = 'Previous page';
+        else if (extraClass === 'pagination-next') ariaLabel = 'Next page';
+        else if (extraClass === 'pagination-last') ariaLabel = 'Last page';
+        button.setAttribute('aria-label', ariaLabel);
+
         if (extraClass === 'active') button.setAttribute('aria-current', 'page');
         button.addEventListener('click', function () {
             if (disabled || page === currentDirectoryPage) return;

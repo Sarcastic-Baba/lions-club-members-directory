@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="image/Lions_Clubs_International_logo.svg.png">
     <title>Admin Panel — Lions Club District 321 C1</title>
     <link rel="stylesheet" href="css/style.css">
     <script>document.documentElement.classList.add('auth-guard-pending');</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="app-immersive-page">
     <header class="header">
         <div class="header-top">
             <div class="container header-container">
                 <div class="logo-area">
                     <div class="logo-icon">
-                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                        <img src="image/Lions_Clubs_International_logo.svg.png" alt="Lions Clubs International logo">
                     </div>
                     <div class="logo-text">
                         <h1>Lions Club</h1>
@@ -69,7 +70,7 @@
                 </svg>
                 My Profile
             </a>
-            <a href="admin.html" class="feed-nav-link active">
+            <a href="admin.html" class="feed-nav-link active" data-admin-nav-link hidden>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
@@ -102,7 +103,13 @@
         <div id="adminContainer" class="admin-panel hidden">
             <h2>Admin Panel</h2>
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="members">
+                <button class="admin-tab active" data-tab="approvals">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    Approvals
+                </button>
+                <button class="admin-tab" data-tab="members">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
@@ -127,7 +134,27 @@
             </div>
             <div id="adminError" class="ai-error hidden"></div>
 
-            <div id="tab-members" class="tab-panel active">
+            <div id="tab-approvals" class="tab-panel active">
+                <div id="approvalsTableContainer" class="admin-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Email</th><th>Club</th><th>Designation</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvalsTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="approvalsEmpty" class="no-results hidden">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    <h3>No pending approvals</h3>
+                    <p>New member profiles will appear here after sign-up.</p>
+                </div>
+            </div>
+
+            <div id="tab-members" class="tab-panel">
                 <div id="membersTableContainer" class="admin-table">
                     <table>
                         <thead>
@@ -228,8 +255,8 @@
                 <p>Serving communities across Bihar since 1957</p>
             </div>
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Use</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Use</a>
                 <a href="dg-office.html">Contact DG Office</a>
             </div>
             <div class="footer-copy">
@@ -240,6 +267,7 @@
 
     <script src="js/auth.js"></script>
     <script src="js/auth-guard.js"></script>
+    <script src="js/admin-nav.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/right-panel.js"></script>
     <script>
@@ -263,7 +291,7 @@
                     return r.json();
                 }).then(function (data) {
                     var profile = data.profile;
-                    if (profile && profile.status === 'active' && (profile.role === 'district_admin' || profile.role === 'club_admin')) {
+                    if (profile && profile.status === 'active' && (profile.role === 'admin' || profile.role === 'district_admin')) {
                         document.getElementById('adminAuthRequired').classList.add('hidden');
                         document.getElementById('adminForbidden').classList.add('hidden');
                         document.getElementById('adminContainer').classList.remove('hidden');

@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="image/Lions_Clubs_International_logo.svg.png">
     <title>Lions Club District 321 C1 — Compassion in Action</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="header">
@@ -15,7 +16,7 @@
             <div class="container header-container">
                 <div class="logo-area">
                     <div class="logo-icon">
-                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                        <img src="image/Lions_Clubs_International_logo.svg.png" alt="Lions Clubs International logo">
                     </div>
                     <div class="logo-text">
                         <h1>Lions Club</h1>
@@ -94,7 +95,7 @@
 
                 <div class="landing-stage" aria-label="Lion Aditya Gupta DG badge and service highlights">
                     <div class="stage-badge">
-                        <img src="image/badge.jpeg" alt="Lion Aditya Gupta DG badge">
+                        <img src="image/Untitled - 26 June 2026 at 11.32.38.png" alt="Lion Aditya Gupta DG badge">
                     </div>
 
                 </div>
@@ -186,8 +187,8 @@
                 <p>Serving communities across Bihar since 1957</p>
             </div>
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Use</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Use</a>
                 <a href="dg-office.html">Contact DG Office</a>
             </div>
             <div class="footer-copy">
@@ -197,6 +198,7 @@
     </footer>
 
     <script src="js/auth.js"></script>
+    <script src="js/admin-nav.js"></script>
     <script src="js/right-panel.js"></script>
     <script>
         Auth.init().then(function () { Auth.renderUI('auth-container'); });
@@ -207,6 +209,8 @@
             var yearsEl = document.getElementById('statYears');
             var animated = false;
             var animationToken = 0;
+            var statsReady = false;
+            var statsVisible = false;
 
             function parseTarget(el) {
                 return parseInt(el.getAttribute('data-target'), 10) || parseInt(el.textContent, 10) || 0;
@@ -234,8 +238,18 @@
                 requestAnimationFrame(step);
             }
 
+            function renderStatText(members, clubs, years) {
+                if (membersEl) membersEl.textContent = members + '+';
+                if (clubsEl) clubsEl.textContent = clubs + '+';
+                if (yearsEl) yearsEl.textContent = years;
+            }
+
+            function setInitialDisplay() {
+                renderStatText(0, 0, 0);
+            }
+
             function triggerAnimation() {
-                if (animated) return;
+                if (animated || !statsReady || !statsVisible) return;
                 animated = true;
                 animationToken += 1;
                 if (membersEl) animateCount(membersEl, parseTarget(membersEl), '+', animationToken);
@@ -249,16 +263,21 @@
                 if (yearsEl) yearsEl.setAttribute('data-target', years);
                 if (animated) {
                     animationToken += 1;
-                    if (membersEl) membersEl.textContent = members + '+';
-                    if (clubsEl) clubsEl.textContent = clubs + '+';
-                    if (yearsEl) yearsEl.textContent = years;
+                    renderStatText(members, clubs, years);
                 }
             }
 
-            function fallbackStats() {
-                updateTargets(34, 16, 69);
+            function setStatsReady(members, clubs, years) {
+                updateTargets(members, clubs, years);
+                statsReady = true;
                 triggerAnimation();
             }
+
+            function fallbackStats() {
+                setStatsReady(34, 16, 69);
+            }
+
+            setInitialDisplay();
 
             fetch('/api/stats', { signal: AbortSignal.timeout(5000) })
                 .then(function (r) {
@@ -269,8 +288,7 @@
                     var m = data.members != null ? data.members : 34;
                     var c = data.clubs != null ? data.clubs : 16;
                     var y = data.years != null ? data.years : 69;
-                    updateTargets(m, c, y);
-                    triggerAnimation();
+                    setStatsReady(m, c, y);
                 })
                 .catch(fallbackStats);
 
@@ -278,6 +296,7 @@
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
+                            statsVisible = true;
                             triggerAnimation();
                             observer.unobserve(entry.target);
                         }
@@ -285,8 +304,15 @@
                 }, { threshold: 0.5 });
                 var proofEl = document.querySelector('.landing-proof');
                 if (proofEl) observer.observe(proofEl);
+                else {
+                    statsVisible = true;
+                    triggerAnimation();
+                }
             } else {
-                setTimeout(triggerAnimation, 300);
+                setTimeout(function () {
+                    statsVisible = true;
+                    triggerAnimation();
+                }, 300);
             }
         })();
     </script>

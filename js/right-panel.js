@@ -1,6 +1,9 @@
 var RightPanel = (function () {
     'use strict';
 
+    var eventsCacheKey = 'lions_upcoming_events_cache';
+    var eventsCacheMs = 60 * 1000;
+
     function init() {
         refresh();
     }
@@ -9,16 +12,23 @@ var RightPanel = (function () {
         var panels = getEventLists();
         if (panels.length === 0) return Promise.resolve();
 
+        var cachedEvents = readEventsCache();
+        if (cachedEvents) renderEvents(cachedEvents);
+
         return fetch('/api/events')
             .then(function (r) {
                 if (!r.ok) throw new Error('Failed to load events');
                 return r.json();
             })
             .then(function (data) {
-                renderEvents(data.events || []);
+                var events = data.events || [];
+                writeEventsCache(events);
+                renderEvents(events);
+                return events;
             })
             .catch(function (err) {
-                console.warn('Right panel events unavailable:', err.message);
+                if (!cachedEvents) console.warn('Right panel events unavailable:', err.message);
+                return cachedEvents || [];
             });
     }
 
@@ -50,6 +60,38 @@ var RightPanel = (function () {
         });
     }
 
+    function setCachedEvents(events) {
+        writeEventsCache(events || []);
+        renderEvents(events || []);
+    }
+
+    function readEventsCache() {
+        try {
+            var raw = sessionStorage.getItem(eventsCacheKey);
+            if (!raw) return null;
+
+            var item = JSON.parse(raw);
+            if (!item || !item.savedAt || !Array.isArray(item.events)) return null;
+            if (Date.now() - item.savedAt > eventsCacheMs) {
+                sessionStorage.removeItem(eventsCacheKey);
+                return null;
+            }
+
+            return item.events;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function writeEventsCache(events) {
+        try {
+            sessionStorage.setItem(eventsCacheKey, JSON.stringify({
+                savedAt: Date.now(),
+                events: Array.isArray(events) ? events : []
+            }));
+        } catch (err) {}
+    }
+
     function escapeHtml(str) {
         if (str == null) return '';
         return String(str)
@@ -68,6 +110,7 @@ var RightPanel = (function () {
 
     return {
         refresh: refresh,
+        setCachedEvents: setCachedEvents,
         renderEvents: renderEvents
     };
 })();

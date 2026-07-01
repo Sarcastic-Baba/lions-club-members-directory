@@ -70,7 +70,7 @@ async function main() {
                     clerk_user_id: adminUserId,
                     name: 'District Admin',
                     email: ADMIN_EMAIL,
-                    role: 'district_admin',
+                    role: 'admin',
                     status: 'active',
                     club: 'District 321 C1 Office',
                     designation: 'District Administrator',
@@ -81,12 +81,12 @@ async function main() {
             if (insertErr) {
                 console.error('  Failed to create admin member record:', insertErr.message);
             } else {
-                console.log('  Admin member record created with role: district_admin');
+                console.log('  Admin member record created with role: admin');
             }
         } else {
             // Ensure role is correct
             await supabase.from('members')
-                .update({ role: 'district_admin', status: 'active' })
+                .update({ role: 'admin', status: 'active' })
                 .eq('clerk_user_id', adminUserId);
             console.log('  Admin member record updated.');
         }
@@ -172,7 +172,7 @@ async function main() {
     console.log('  Admin:');
     console.log('    Email:    ' + ADMIN_EMAIL);
     console.log('    Password: ' + ADMIN_PASSWORD);
-    console.log('    Role:     district_admin');
+    console.log('    Role:     admin');
     console.log('');
     console.log('  Member:');
     console.log('    Email:    ' + MEMBER_EMAIL);
